@@ -89,7 +89,7 @@ void PyProcessDiscovery::findPythonPids(const std::set<pid_t>& pids) {
           "Python process discovery took {}ms - found {} Python processes out of {} examined.",
           discoveryLatencyMs,
           pythonPids.size(),
-          pidCount)
+          pidCount.load())
           .c_str());
 }
 
