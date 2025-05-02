@@ -147,6 +147,8 @@ install: all
 	$(call install_file,$(OUTPUT),pystacks.a,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),pystacks.bpf.o,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),strobelight/bpf_lib/python/pystacks.subskel.h,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),bpf/uapi/linux/bpf.h,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),bpf/vmlinux/vmlinux.h,$(INSTALL_DIR))
 
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/common/common.h,$(INSTALL_DIR))
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/python/pystacks/pystacks.bpf.h,$(INSTALL_DIR))

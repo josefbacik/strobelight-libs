@@ -8,8 +8,8 @@
 #else
 #include <bpf/uapi/linux/bpf.h>
 #include <stddef.h>
+#include <sys/types.h>
 #include <cstdint>
-#include <ostream>
 #endif
 
 // the sample was not of the same type as the handler
