@@ -5,6 +5,7 @@
 #include <bpf/uapi/linux/bpf.h>
 #include <re2/re2.h>
 
+#include <fmt/ostream.h>
 #include <iterator>
 #include <vector>
 
@@ -20,7 +21,6 @@ extern "C" {
 
 #include <string>
 #include "strobelight/bpf_lib/include/FunctionSource.h"
-#include "strobelight/bpf_lib/include/format.h"
 #include "strobelight/bpf_lib/python/discovery/PyProcessDiscovery.h"
 #include "strobelight/bpf_lib/python/include/PySymbolStructs.h"
 #include "strobelight/bpf_lib/python/include/structs.h"
@@ -150,7 +150,7 @@ std::string getSymbolName(
     // combine it with the class name in the appropriate format
     if (funcNameStr.length() > 0) {
       if (qualname.length() > 0) {
-        qualname = bpf_lib_format::format("{}.{}", qualname, funcNameStr);
+        qualname = fmt::format("{}.{}", qualname, funcNameStr);
       } else {
         qualname = std::move(funcNameStr);
       }
@@ -161,7 +161,7 @@ std::string getSymbolName(
   if (moduleName.empty()) {
     return qualname;
   }
-  return bpf_lib_format::format("{}:{}", moduleName, qualname);
+  return fmt::format("{}:{}", moduleName, qualname);
 }
 
 bool initPyLineTable(
@@ -186,7 +186,7 @@ bool initPyLineTable(
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      bpf_lib_format::format(
+      fmt::format(
           "initPyLineTable Line table for '{}' in {} is @ {:#x} (length:{} first_line:{})",
           pySymbol.funcname,
           pidInfo->getPid(),
@@ -231,7 +231,7 @@ void initPySymbols(
       missingSymbols++;
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          bpf_lib_format::format(
+          fmt::format(
               "Failed to lookup id for symbol {}.{}",
               nextSym.filename.value,
               nextSym.qualname.value)
@@ -254,7 +254,7 @@ void initPySymbols(
       } else {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            bpf_lib_format::format(
+            fmt::format(
                 "Failed to read qualname for symbol id {} at {:#x} in {}",
                 id,
                 nextSym.qualname.fault_addr,
@@ -276,7 +276,7 @@ void initPySymbols(
       } else {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            bpf_lib_format::format(
+            fmt::format(
                 "Failed to read filename for symbol id {} at {:#x} in {}",
                 id,
                 nextSym.qualname.fault_addr,
@@ -294,8 +294,7 @@ void initPySymbols(
 
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          bpf_lib_format::format(
-              "Mapped Python symbol {} -> {}", id, pySymbol.funcname)
+          fmt::format("Mapped Python symbol {} -> {}", id, pySymbol.funcname)
               .c_str());
 
       pySymbol.filename = nextSym.filename.value;
@@ -308,14 +307,14 @@ void initPySymbols(
   if (totalBPFSymbols > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
+        fmt::format(
             "BPF symbols FD table contains {} symbols. ", totalBPFSymbols)
             .c_str());
   }
   if (newSymbols > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
+        fmt::format(
             "Added {} Python symbols to userspace ({} total)",
             newSymbols,
             totalSymbols)
@@ -324,21 +323,19 @@ void initPySymbols(
   if (missingSymbols > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
-            "Failed to initialize {} symbols.", missingSymbols)
+        fmt::format("Failed to initialize {} symbols.", missingSymbols)
             .c_str());
   }
   if (duplicateSymbols > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
-            "Duplicate {} BPF symbols, skipped.", duplicateSymbols)
+        fmt::format("Duplicate {} BPF symbols, skipped.", duplicateSymbols)
             .c_str());
   }
   if (missingQualnameRecoverySymbol > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
+        fmt::format(
             "Unrecoverable qualname (even with fault_pid) for {} symbols.",
             missingQualnameRecoverySymbol)
             .c_str());
@@ -346,8 +343,7 @@ void initPySymbols(
   if (missingLinetables > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        bpf_lib_format::format(
-            "Failed to initialize {} livetables.", missingLinetables)
+        fmt::format("Failed to initialize {} livetables.", missingLinetables)
             .c_str());
   }
 }
@@ -425,7 +421,7 @@ FunctionSource resolvePySource(
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      bpf_lib_format::format(
+      fmt::format(
           "Resolved frame w/ symbol_id:{} inst_idx:{} to {}:{}",
           frame.symbol_id,
           frame.inst_idx,
@@ -478,7 +474,7 @@ struct stack_walker_run* pystacks_init(
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      bpf_lib_format::format("init for pids {}", pidSet.size()).c_str());
+      fmt::format("init for pids {}", pidSet.size()).c_str());
   run->skel_->bss.pystacks_prog_cfg->num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
   run->skel_->bss.pystacks_prog_cfg->read_leaf_frame = false;
   run->skel_->bss.pystacks_prog_cfg->enable_debug_msgs = false;

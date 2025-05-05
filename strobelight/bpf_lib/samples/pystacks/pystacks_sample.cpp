@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+#include <fmt/core.h>
 #include <array>
 #include <chrono>
 #include <fstream>
@@ -9,7 +10,6 @@
 
 #include <bpf/libbpf.h>
 #include <linux/perf_event.h>
-#include "strobelight/bpf_lib/include/format.h"
 #include "strobelight/bpf_lib/include/logging.h"
 #include "strobelight/bpf_lib/python/pystacks/pystacks.h"
 #include "strobelight/bpf_lib/samples/pystacks/pystacks_sample.skel.h"
@@ -122,7 +122,7 @@ class PyStacksSample {
   handleSampleCallback(void* ctx, int cpu, void* data, __u32 /*size*/) {
     struct Event* event = (struct Event*)data;
 
-    std::cout << bpf_lib_format::format(
+    std::cout << fmt::format(
         "SAMPLE cpu: {} pid: {} tid: {} comm: {} ktime: {}\n",
         cpu,
         event->pid,
@@ -154,7 +154,7 @@ class PyStacksSample {
           self->psr_, pystacksMessage.buffer[idx], function_name, stack_len);
       pystacks_symbolize_filename_line(
           self->psr_, pystacksMessage.buffer[idx], filename, stack_len, line);
-      std::cout << bpf_lib_format::format(
+      std::cout << fmt::format(
           "    {} ({}:{})\n", function_name, filename, line);
     }
     std::cout << std::endl;
