@@ -8,7 +8,6 @@ Libraries are for use in applications leveraging libbpf.
 BPF application leveraging libbpf.
 The development versions of following libraries are needed on the system:
 * libelf
-* fmt
 * re2
 * libcap
 

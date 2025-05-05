@@ -8,8 +8,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "strobelight/bpf_lib/include/format.h"
 
-#include <fmt/format.h>
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
 #include "strobelight/bpf_lib/util/pid_info/ProcPidInfo.h"
 
@@ -18,8 +18,6 @@ namespace facebook::pid_info {
 using std::map;
 using std::string;
 using std::vector;
-
-using namespace fmt::literals;
 
 bool populateCgMap(
     map<string, string>& cg_map,
@@ -91,7 +89,7 @@ bool haveEffectiveSysAdminCapability() {
     if (nullptr == caps) {
       strobelight_lib_print(
           STROBELIGHT_LIB_WARN,
-          fmt::format(
+          bpf_lib_format::format(
               "Error from cap_get_proc(): {}",
               strerror_r(errno, err_buf.data(), err_buf.max_size()))
               .c_str());
@@ -104,7 +102,7 @@ bool haveEffectiveSysAdminCapability() {
     if (0 != err) {
       strobelight_lib_print(
           STROBELIGHT_LIB_WARN,
-          fmt::format(
+          bpf_lib_format::format(
               "Error from cap_get_flag(CAP_SYS_ADMIN, CAP_EFFECTIVE): {}",
               strerror_r(errno, err_buf.data(), err_buf.max_size()))
               .c_str());
@@ -112,7 +110,7 @@ bool haveEffectiveSysAdminCapability() {
       ret = CAP_SET == value;
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format(
+          bpf_lib_format::format(
               "Process {} CAP_SYS_ADMIN", (ret ? "has" : "does not have"))
               .c_str());
     }

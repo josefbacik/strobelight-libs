@@ -2,7 +2,6 @@
 
 #include "strobelight/bpf_lib/util/pid_info/ProcPidInfo.h"
 
-#include <fmt/format.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -20,6 +19,7 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "strobelight/bpf_lib/include/format.h"
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
 #include "strobelight/bpf_lib/util/pid_info/ProcUtil.h"
 
@@ -281,27 +281,27 @@ pid_t ProcPidInfo::getNSThreadGroupId() const {
 }
 
 std::string ProcPidInfo::getVmSize() const {
-  return fmt::format(kMemStatFormat, getVmSizeBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getVmSizeBytes() / 1024ULL);
 }
 
 std::string ProcPidInfo::getVmHwm() const {
-  return fmt::format(kMemStatFormat, getVmHwmBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getVmHwmBytes() / 1024ULL);
 }
 
 std::string ProcPidInfo::getVmRss() const {
-  return fmt::format(kMemStatFormat, getVmRssBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getVmRssBytes() / 1024ULL);
 }
 
 std::string ProcPidInfo::getRssAnon() const {
-  return fmt::format(kMemStatFormat, getRssAnonBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getRssAnonBytes() / 1024ULL);
 }
 
 std::string ProcPidInfo::getRssFile() const {
-  return fmt::format(kMemStatFormat, getRssFileBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getRssFileBytes() / 1024ULL);
 }
 
 std::string ProcPidInfo::getRssShmem() const {
-  return fmt::format(kMemStatFormat, getRssShmemBytes() / 1024ULL);
+  return bpf_lib_format::format(kMemStatFormat, getRssShmemBytes() / 1024ULL);
 }
 
 uint64_t ProcPidInfo::getVmSizeBytes() const {
@@ -530,7 +530,7 @@ std::vector<pid_t> ProcPidInfo::getRunningThreads() const {
     // silently instead of throwing an exception
     strobelight_lib_print(
         STROBELIGHT_LIB_DEBUG,
-        fmt::format(
+        bpf_lib_format::format(
             "Unable to read /proc/{}/task/. PID probably doesn't exist anymore",
             pid_)
             .c_str());
@@ -583,7 +583,7 @@ bool ProcPidInfo::iterateAllMemoryMappings(
   if (!fs.is_open()) {
     strobelight_lib_print(
         STROBELIGHT_LIB_DEBUG,
-        fmt::format(
+        bpf_lib_format::format(
             "[{}] Unable to open procfs mapfile: '{}'",
             pid_,
             filename.filename().string())
@@ -597,7 +597,7 @@ bool ProcPidInfo::iterateAllMemoryMappings(
     if (!ProcPidInfo::readMemoryMapLine(line, module)) {
       strobelight_lib_print(
           STROBELIGHT_LIB_DEBUG,
-          fmt::format(
+          bpf_lib_format::format(
               "[{}] Error reading line '{}' in {} procfs mapfile",
               pid_,
               line,
@@ -613,7 +613,7 @@ bool ProcPidInfo::iterateAllMemoryMappings(
     } catch (const std::exception& e) {
       strobelight_lib_print(
           STROBELIGHT_LIB_DEBUG,
-          fmt::format(
+          bpf_lib_format::format(
               "[{}] Exception executing callback on line: '{}' in {} procfs mapfile. Message: {}.",
               pid_,
               line,
@@ -749,7 +749,7 @@ bool ProcPidInfo::iterateAllMemoryMappings(
     fs::path file;
     if (haveEffectiveSysAdminCapability()) {
       file = getProcfsPath("map_files") /
-          fmt::format("{:x}-{:x}", mm.startAddr, mm.endAddr);
+          bpf_lib_format::format("{:x}-{:x}", mm.startAddr, mm.endAddr);
     } else {
       if (mm.name.find(kDeleted) != std::string::npos) {
         elf = nullptr;
@@ -795,7 +795,7 @@ bool ProcPidInfo::iterateAllMemoryMappings(
       if (!lowestVaddr) {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Could not find an eligible virtual load address for {} @ {} - {} in process {} [{}]",
                 mm.name,
                 (void*)mm.startAddr,
@@ -884,7 +884,8 @@ void ProcPidInfo::readProcExe() {
   if (!std::filesystem::is_symlink(fn, ec)) {
     strobelight_lib_print(
         STROBELIGHT_LIB_DEBUG,
-        fmt::format("/proc/[pid]/exe doesn't exist for process {}", pid_)
+        bpf_lib_format::format(
+            "/proc/[pid]/exe doesn't exist for process {}", pid_)
             .c_str());
     return;
   }
@@ -1115,7 +1116,8 @@ bool ProcPidInfo::readProcInfo() {
         if (!it->second(l)) {
           strobelight_lib_print(
               STROBELIGHT_LIB_WARN,
-              fmt::format("Unable to parse value for {}", it->first).c_str());
+              bpf_lib_format::format("Unable to parse value for {}", it->first)
+                  .c_str());
           continue;
         }
         memSigCbs.erase(it);

@@ -2,10 +2,10 @@
 
 #include "strobelight/bpf_lib/util/pid_info/SharedPidInfoCache.h"
 
-#include <fmt/chrono.h>
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
 
 #include <utility>
+#include "strobelight/bpf_lib/include/format.h"
 
 namespace facebook::pid_info {
 
@@ -87,12 +87,12 @@ size_t SharedPidInfoCache::removeUnused(
   if (removed > 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "Removed unused entries from SharedPidInfoCache: {} ({} -> {} entries) unused after {}",
             removed,
             oldCount,
             newCount,
-            std::chrono::duration_cast<std::chrono::seconds>(interval))
+            std::chrono::duration_cast<std::chrono::seconds>(interval).count())
             .c_str());
   }
   return removed;

@@ -4,9 +4,9 @@
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
 #include "strobelight/bpf_lib/util/pid_info/SharedPidInfo.h"
 
-#include <fmt/format.h>
 #include <sys/types.h>
 #include <cstdlib>
+#include "strobelight/bpf_lib/include/format.h"
 
 namespace facebook::strobelight::bpf_lib::python {
 
@@ -22,7 +22,7 @@ PyLineTable::PyLineTable(
   if (length > kMaxLineTableSize) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "Bad line table size ({} bytes) in process {}",
             length,
             pidInfo.getPid())
@@ -36,7 +36,7 @@ PyLineTable::PyLineTable(
   } else {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "Failed to read {} byte line table at {:#x} in process ",
             length,
             addr,

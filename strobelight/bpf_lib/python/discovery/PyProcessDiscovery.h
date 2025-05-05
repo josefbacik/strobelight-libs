@@ -67,7 +67,8 @@ class PyProcessDiscovery {
     int versionMicro;
 
     std::string version() {
-      return fmt::format("{}.{}.{}", versionMajor, versionMinor, versionMicro);
+      return bpf_lib_format::format(
+          "{}.{}.{}", versionMajor, versionMinor, versionMicro);
     }
   };
   std::optional<PyRuntimeInfo> getPyRuntimeInfo(pid_t pid) const;

@@ -1,22 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 #include <bpf/uapi/linux/bpf.h>
-#include <fmt/format.h>
 
 extern "C" {
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 }
 
+#include "strobelight/bpf_lib/include/format.h"
 #include "strobelight/bpf_lib/python/discovery/PyProcessDiscovery.h"
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
 #include "strobelight/bpf_lib/util/ProcessDiscovery.h"
 #include "strobelight/bpf_lib/util/pid_info/SharedPidInfo.h"
 
 #include <elf.h>
-#include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h> // needed for PidInfo in formatter
 #include <re2/re2.h>
 #include <strobelight/bpf_lib/util/ElfFile.h>
 #include <memory>
@@ -85,7 +82,7 @@ void PyProcessDiscovery::findPythonPids(const std::set<pid_t>& pids) {
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      fmt::format(
+      bpf_lib_format::format(
           "Python process discovery took {}ms - found {} Python processes out of {} examined.",
           discoveryLatencyMs,
           pythonPids.size(),
@@ -111,7 +108,8 @@ void PyProcessDiscovery::discoverAndConfigure(
       if (!pyInfo) {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format("No python runtime info for process {}", pid).c_str());
+            bpf_lib_format::format("No python runtime info for process {}", pid)
+                .c_str());
         return;
       }
 
@@ -119,7 +117,7 @@ void PyProcessDiscovery::discoverAndConfigure(
       if (bpf_map_update_elem(pidTargetMapFd, &pid, &targeted, BPF_ANY) != 0) {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Failed to add process {} to pid target map {}",
                 pid,
                 pidTargetMapFd)
@@ -154,7 +152,8 @@ bool PyProcessDiscovery::updatePidConfigTable(int mapFd) const {
   if (mapFd <= 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("Invalid map fd for pystacks_pid_config map: {}", mapFd)
+        bpf_lib_format::format(
+            "Invalid map fd for pystacks_pid_config map: {}", mapFd)
             .c_str());
     return false;
   }
@@ -171,7 +170,8 @@ bool PyProcessDiscovery::updatePidConfigTable(int mapFd) const {
   } // pythonPidsMutex_ rlock
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      fmt::format("Updated Python pid configs for {} processes.", pyConfigCount)
+      bpf_lib_format::format(
+          "Updated Python pid configs for {} processes.", pyConfigCount)
           .c_str());
   return true;
 }
@@ -181,7 +181,8 @@ bool PyProcessDiscovery::updatePidConfigTableForPid(int mapFd, pid_t pid)
   if (mapFd <= 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("Invalid map fd for pystacks_pid_config map: {}", mapFd)
+        bpf_lib_format::format(
+            "Invalid map fd for pystacks_pid_config map: {}", mapFd)
             .c_str());
     return false;
   }
@@ -195,7 +196,8 @@ bool PyProcessDiscovery::updatePidConfigTableForPid(int mapFd, pid_t pid)
   } else {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("No Python pid config for process {}.", pid).c_str());
+        bpf_lib_format::format("No Python pid config for process {}.", pid)
+            .c_str());
     return false;
   }
 }
@@ -204,7 +206,8 @@ void PyProcessDiscovery::updateBinaryIdConfigTable(int mapFd) const {
   if (mapFd <= 0) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("invalid map fd for binary_id_config map: {}", mapFd)
+        bpf_lib_format::format(
+            "invalid map fd for binary_id_config map: {}", mapFd)
             .c_str());
     return;
   }
@@ -340,7 +343,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
       if (!pyBinaryInfo) {
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format("Not a Python module: {}", mm.name).c_str());
+            bpf_lib_format::format("Not a Python module: {}", mm.name).c_str());
       }
       // Check if the executable contains the _PyRuntime symbol but is not
       // an actual Python runtime.
@@ -349,7 +352,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
         if (exePyRuntimeAddr != 0) {
           strobelight_lib_print(
               STROBELIGHT_LIB_INFO,
-              fmt::format(
+              bpf_lib_format::format(
                   "Discovered orphaned _PyRuntime symbol in process {} executable {} @ {:#x}",
                   pidInfo.getPid(),
                   mm.name,
@@ -363,7 +366,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
 
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format("Found Python module {}", mm.name).c_str());
+            bpf_lib_format::format("Found Python module {}", mm.name).c_str());
 
         { // pythonPidsMutex_ wlock
           std::unique_lock<std::shared_mutex> wlock(pythonPidsMutex_);
@@ -374,7 +377,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
             computePyPidData(*pyBinaryInfo, *baseLoadAddr, exePyRuntimeAddr);
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Process {} uses Python - {} {}.{}.{} runtime at {} - current_state_addr:{:#x} tls_key_addr:{:#x}",
                 pidInfo.getPid(),
                 getPyInterpreterName(pyBinaryInfo->interpreter),
@@ -397,7 +400,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
   } catch (const std::exception& e) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "Exception when checking process {} for Python: {}",
             pidInfo.getPid(),
             e.what())
@@ -412,13 +415,14 @@ bool PyProcessDiscovery::checkPyProcessImpl(
     } // pythonProcessInfoCacheMutex_ wlock
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "All offsets: {} {}", pid, pidInfo.getName() /*, pidData.offsets */)
             .c_str());
   } else {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("Process {} does not use Python.", pidInfo.getPid())
+        bpf_lib_format::format(
+            "Process {} does not use Python.", pidInfo.getPid())
             .c_str());
     { // pythonProcessInfoCacheMutex_ wlock
       std::unique_lock<std::shared_mutex> wlock(pythonProcessInfoCacheMutex_);
@@ -471,7 +475,7 @@ PyProcessDiscovery::getPyModuleInfo(
     pyVersion = pyVersionElf;
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "Read python version from elf file {}: {}", elfPath, *pyVersion)
             .c_str());
   } else {
@@ -484,10 +488,10 @@ PyProcessDiscovery::getPyModuleInfo(
     int major, minor;
     if (RE2::PartialMatch(
             filename.string(), kPyProcessPatternRegex, &major, &minor)) {
-      pyVersion = fmt::format("cpython-{}{}", major, minor);
+      pyVersion = bpf_lib_format::format("cpython-{}{}", major, minor);
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format(
+          bpf_lib_format::format(
               "Failed to read Python runtime version from binary. Using file name {} => '{}' as best guess.",
               filename.string(),
               *pyVersion)
@@ -495,7 +499,7 @@ PyProcessDiscovery::getPyModuleInfo(
     } else {
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format(
+          bpf_lib_format::format(
               "Could not infer python version from filename {}", elfPath)
               .c_str());
     }
@@ -531,7 +535,9 @@ PyProcessDiscovery::getPyModuleInfo(
     if (!pyRuntimeAddr) {
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format("No Python runtime state found in {}.", elfPath).c_str());
+          bpf_lib_format::format(
+              "No Python runtime state found in {}.", elfPath)
+              .c_str());
       // no runtime state found - not a Python binary
       destOffsetResolver.mergeOffsetResolver(moduleInfo.offsetResolver);
       return moduleInfo.pyBinaryInfo;
@@ -539,7 +545,8 @@ PyProcessDiscovery::getPyModuleInfo(
     if (!pyVersion) {
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format("No Python version string found in {}.", elfPath)
+          bpf_lib_format::format(
+              "No Python version string found in {}.", elfPath)
               .c_str());
       // No version string found - not an actual Python runtime even though this
       // binary contains the runtime state structure - e.g. _PyRuntime. See
@@ -557,7 +564,7 @@ PyProcessDiscovery::getPyModuleInfo(
     if (pyVersion && pyVersion->find(kCPython312) != std::string::npos) {
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
-          fmt::format(
+          bpf_lib_format::format(
               "CPython 3.12 detected. Support for 3.12 is currently experimental. Elf binary: {}",
               elfPath)
               .c_str());
@@ -627,7 +634,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyGIL_offset;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyGIL_offset' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyGIL_offset)
@@ -638,7 +645,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyGIL_last_holder;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyGIL_last_holder' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyGIL_last_holder)
@@ -649,7 +656,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyFrameObject_lasti;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyFrameObject_lasti' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyFrameObject_lasti)
@@ -661,7 +668,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyCodeObject_firstlineno;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyCodeObject_firstlineno' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyCodeObject_firstlineno)
@@ -673,7 +680,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyCodeObject_linetable;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyCodeObject_linetable' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyCodeObject_linetable)
@@ -684,7 +691,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyBytesObject_data;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyBytesObject_data' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyBytesObject_data)
@@ -695,7 +702,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
             kCinder310OffsetConfig.PyVarObject_size;
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
-            fmt::format(
+            bpf_lib_format::format(
                 "Patched 'PyVarObject_size' for cinder runtime {}: {}",
                 elfPath,
                 resolvedOffsets.offsets.PyVarObject_size)
@@ -716,7 +723,7 @@ uintptr_t PyProcessDiscovery::getElfSymbolAddress(
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      fmt::format(
+      bpf_lib_format::format(
           "Found '{}' @ {:#x} in {} section of {}",
           symbol->name,
           symbol->sym.st_value,
@@ -740,7 +747,8 @@ const char* PyProcessDiscovery::getElfSymbolStringValue(
   if (addrPtr == nullptr) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("getSymbolValue failed for: {}", symbol->name).c_str());
+        bpf_lib_format::format("getSymbolValue failed for: {}", symbol->name)
+            .c_str());
     return nullptr;
   }
 
@@ -757,7 +765,7 @@ const char* PyProcessDiscovery::getElfSymbolStringValue(
 
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
-      fmt::format(
+      bpf_lib_format::format(
           "Found '{}' @ {:#x} in {} section of {}.",
           symbol->name,
           addr,
@@ -770,11 +778,11 @@ const char* PyProcessDiscovery::getElfSymbolStringValue(
   if (value == nullptr) {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format("Invalid section for addr:{:#x}", addr).c_str());
+        bpf_lib_format::format("Invalid section for addr:{:#x}", addr).c_str());
   } else {
     strobelight_lib_print(
         STROBELIGHT_LIB_INFO,
-        fmt::format(
+        bpf_lib_format::format(
             "String value for '{}' addr:{:#x} is '{}'",
             symbol->name,
             addr,

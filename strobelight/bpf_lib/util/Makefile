@@ -16,7 +16,7 @@ ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
 LIBS := util
 
-ALL_LDFLAGS += -lelf -lz -lcap -lfmt
+ALL_LDFLAGS += -lelf -lz -lcap
 
 ifeq ($(V),1)
 	Q =

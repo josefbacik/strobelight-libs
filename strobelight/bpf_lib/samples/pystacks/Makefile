@@ -34,7 +34,7 @@ LIBS := pystacks_sample.bpf pystacks_sample
 CLANG_BPF_SYS_INCLUDES ?= $(shell $(CLANG) -v -E - </dev/null 2>&1 \
 	| sed -n '/<...> search starts here:/,/End of search list./{ s| \(/.*\)|-idirafter \1|p }')
 
-ALL_LDFLAGS += -lelf -lz -lcap -lfmt -lm -lre2
+ALL_LDFLAGS += -lelf -lz -lcap -lm -lre2
 
 ifeq ($(V),1)
 	Q =
