@@ -127,6 +127,8 @@ class ElfFile {
     return initialized_;
   }
 
+  bool isPie();
+
  private:
   ElfFile(const ElfFile&) = delete;
   ElfFile& operator=(const ElfFile&) = delete;

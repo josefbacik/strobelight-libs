@@ -330,8 +330,8 @@ bool PyProcessDiscovery::checkPyProcessImpl(
         return facebook::pid_info::IterControl::CONTINUE;
       }
 
-      const bool isExe = elf->eType() == ET_EXEC;
-
+      const bool isPie = elf->isPie();
+      const bool isExe = isPie || elf->eType() == ET_EXEC;
       const auto binaryId =
           binary_id(KMKDEV(mm.devMajor, mm.devMinor), mm.inode);
       // Get BinaryInfo + OffsetResolver for the module
@@ -358,7 +358,16 @@ bool PyProcessDiscovery::checkPyProcessImpl(
         }
       } else {
         if (isExe) {
-          exePyRuntimeAddr = pyBinaryInfo->pidData.py_runtime_addr;
+          if (isPie) {
+            // PIE executables are special because they can be loaded into a
+            // random position in memory (similar to shared libraries), so we
+            // need to adjust by baseLoadAddr to convert file to memory
+            // addresses.
+            exePyRuntimeAddr =
+                *baseLoadAddr + pyBinaryInfo->pidData.py_runtime_addr;
+          } else {
+            exePyRuntimeAddr = pyBinaryInfo->pidData.py_runtime_addr;
+          }
         }
 
         strobelight_lib_print(

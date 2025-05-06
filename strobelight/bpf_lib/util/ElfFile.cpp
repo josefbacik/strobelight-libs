@@ -232,4 +232,41 @@ bool ElfFile::getSectionContainingAddress(
   return false;
 }
 
+bool ElfFile::isPie() {
+  if (!initialized_ || eType_ != ET_DYN) {
+    return false;
+  }
+  // Get the dynamic section and check the flags, this is equivalent to
+  // readelf --dynamic
+  // /proc/651059/root/packages/xlformers_multimodal_conda/conda/bin/python3.10
+  // | grep FLAGS_1
+  // DF_1_PIE indicates this is a PIE
+  // 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE
+  Elf_Scn* eScn = nullptr;
+  GElf_Shdr sectionHeader;
+
+  while ((eScn = elf_nextscn(elfFile_, eScn)) != nullptr) {
+    if (gelf_getshdr(eScn, &sectionHeader) &&
+        sectionHeader.sh_type == SHT_DYNAMIC) {
+      break;
+    }
+  }
+
+  if (sectionHeader.sh_type != SHT_DYNAMIC) {
+    return false;
+  }
+
+  Elf_Data* data = nullptr;
+  while ((data = elf_getdata(eScn, data)) != nullptr) {
+    GElf_Dyn dyn;
+    unsigned i = 0;
+    while (gelf_getdyn(data, i++, &dyn) != nullptr) {
+      if (dyn.d_tag == DT_FLAGS_1) {
+        return dyn.d_un.d_val & DF_1_PIE;
+      }
+    }
+  }
+  return false;
+}
+
 } // namespace facebook::strobelight
