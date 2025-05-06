@@ -22,7 +22,7 @@ CXX_VERSION ?= -std=c++20
 
 SRC_DIRS := src
 
-INCLUDES := -I$(OUTPUT) -I$(OUTPUT)/$(UAPI_REL_PATH) -I ../../..
+INCLUDES := -I$(OUTPUT) -I$(OUTPUT)/$(UAPI_REL_PATH) -I$(VMLINUX_OUTPUT) -I ../../..
 CFLAGS := -g -Wall $(CXX_VERSION)
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 

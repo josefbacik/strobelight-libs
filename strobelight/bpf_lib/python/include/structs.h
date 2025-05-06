@@ -4,7 +4,7 @@
 #define __BPF_LIB_PYTHON_STRUCTS_H__
 
 #ifdef __cplusplus
-#include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h>
 #include <cstdint>
 #endif
 

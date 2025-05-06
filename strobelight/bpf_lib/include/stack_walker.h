@@ -4,9 +4,9 @@
 #define __BPF_LIB_STACK_READER_H__
 
 #ifndef __cplusplus
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+#include <vmlinux.h> /* all kernel types */
 #else
-#include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <cstdint>
