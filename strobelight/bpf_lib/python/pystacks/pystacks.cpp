@@ -37,7 +37,8 @@ struct stack_walker_run {
   pystacks_subskel* skel_{nullptr};
 
   std::shared_ptr<facebook::pid_info::SharedPidInfoCache> pidInfoCache_;
-
+  std::shared_ptr<facebook::strobelight::bpf_lib::python::PyProcessDiscovery>
+      pyProcessDiscovery_;
   std::vector<std::string> moduleIdentifierKeywords_;
 
   std::shared_mutex mapsMutex_;
@@ -184,6 +185,12 @@ bool initPyLineTable(
     return false;
   }
 
+  auto pyRuntimeInfo =
+      run->pyProcessDiscovery_->getPyRuntimeInfo(linetable.pid);
+  if (pyRuntimeInfo == std::nullopt) {
+    return false;
+  }
+
   strobelight_lib_print(
       STROBELIGHT_LIB_INFO,
       fmt::format(
@@ -196,7 +203,12 @@ bool initPyLineTable(
           .c_str());
 
   pySymbol.linetable = PyLineTable(
-      *pidInfo, linetable.first_line, linetable.addr, linetable.length);
+      *pidInfo,
+      linetable.first_line,
+      linetable.addr,
+      linetable.length,
+      pyRuntimeInfo->versionMajor,
+      pyRuntimeInfo->versionMinor);
 
   return true;
 }
@@ -465,8 +477,9 @@ struct stack_walker_run* pystacks_init(
   run->pidInfoCache_ = facebook::pid_info::getSharedPidInfoCache(),
 
   run->skel_->bss.pid_target_helpers_prog_cfg->has_targeted_pids = true;
-  PyProcessDiscovery ppd;
-  ppd.discoverAndConfigure(
+  run->pyProcessDiscovery_ = std::make_shared<
+      facebook::strobelight::bpf_lib::python::PyProcessDiscovery>();
+  run->pyProcessDiscovery_->discoverAndConfigure(
       pidSet,
       bpf_map__fd(run->skel_->maps.pystacks_pid_config),
       bpf_map__fd(run->skel_->maps.pystacks_binaryid_config),

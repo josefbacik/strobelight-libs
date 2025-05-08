@@ -12,25 +12,37 @@ namespace facebook::strobelight::bpf_lib::python {
 
 class PyLineTable {
  public:
-  PyLineTable(uint32_t firstLine, const void* data, size_t length);
+  PyLineTable(
+      int firstLine,
+      const void* data,
+      size_t length,
+      int pyMajorVer,
+      int pyMinorVer);
 
   PyLineTable(
       pid_info::SharedPidInfo& pidInfo,
-      uint32_t firstLine,
+      int firstLine,
       uintptr_t addr,
-      size_t length);
+      size_t length,
+      int pyMajorVer,
+      int pyMinorVer);
 
-  uint32_t getLineForInstIndex(int addrq) const;
+  int getLineForInstIndex(int addrq) const;
 
  private:
-  struct PyLineTableEntry {
-    uint8_t offsetDelta;
-    int8_t lineDelta;
-  };
-  std::vector<PyLineTableEntry> entries_;
-  uint32_t firstLine_;
+  int pyMajorVer_;
+  int pyMinorVer_;
 
-  void initFromBytes(const uint8_t* data, size_t length);
+  std::vector<uint8_t> data_;
+  int firstLine_;
+
+  int getLineForInstIndexDefault(int addrq) const;
+  int getLineForInstIndex310(int addrq) const;
+
+  enum IterControl : int { CONTINUE, BREAK };
+  void parseLocationTable(
+      const std::function<
+          IterControl(uintptr_t start, uintptr_t end, int line)>& fn) const;
 };
 
 } // namespace facebook::strobelight::bpf_lib::python

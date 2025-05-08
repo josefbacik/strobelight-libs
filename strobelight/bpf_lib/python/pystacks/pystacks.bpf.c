@@ -268,8 +268,7 @@ static __always_inline void get_names(
       offsets->PyCodeObject_linetable != DEFAULT_FIELD_OFFSET &&
       offsets->PyVarObject_size != DEFAULT_FIELD_OFFSET &&
       offsets->PyBytesObject_data != DEFAULT_FIELD_OFFSET &&
-      offsets->PyCodeObject_firstlineno != DEFAULT_FIELD_OFFSET &&
-      offsets->PyFrameObject_lasti != DEFAULT_FIELD_OFFSET) {
+      offsets->PyCodeObject_firstlineno != DEFAULT_FIELD_OFFSET) {
     void* linetable_ptr = 0;
     if (bpf_probe_read_user_task(
             &linetable_ptr,
@@ -296,30 +295,53 @@ static __always_inline void get_names(
       linetable->pid = pid;
 
       int32_t lasti = -1;
-      if (use_shadow_frame) {
-        // If shadow frames are used then cur_frame points to a PyShadowFrame -
-        // not a PyFrameObject. The content of the `data` member of a
-        // PyShadowFrame varies according to `ptr_knd`.
-        void* data_ptr;
-        int64_t ptr_kind;
-        read_shadow_frame_data(cur_frame, offsets, &data_ptr, &ptr_kind, task);
-        if (data_ptr && ptr_kind == offsets->PyShadowFrame_PYSF_PYFRAME) {
-          // data_ptr holds PyFrameObject*.
-          // See cinder/include/internal/pycore_shadow_frame_struct.h
+      if (offsets->PyVersion_major == 3 && offsets->PyVersion_minor < 11) {
+        if (use_shadow_frame) {
+          // If shadow frames are used then cur_frame points to a PyShadowFrame
+          // - not a PyFrameObject. The content of the `data` member of a
+          // PyShadowFrame varies according to `ptr_knd`.
+          void* data_ptr;
+          int64_t ptr_kind;
+          read_shadow_frame_data(
+              cur_frame, offsets, &data_ptr, &ptr_kind, task);
+          if (data_ptr && ptr_kind == offsets->PyShadowFrame_PYSF_PYFRAME) {
+            // data_ptr holds PyFrameObject*.
+            // See cinder/include/internal/pycore_shadow_frame_struct.h
+            bpf_probe_read_user_task(
+                &lasti,
+                sizeof(lasti),
+                data_ptr + offsets->PyFrameObject_lasti,
+                task);
+          } else {
+            state->lasti = -2; // unsupported ptr_kind
+          }
+        } else if (offsets->PyFrameObject_lasti != DEFAULT_FIELD_OFFSET) {
           bpf_probe_read_user_task(
               &lasti,
               sizeof(lasti),
-              data_ptr + offsets->PyFrameObject_lasti,
+              cur_frame + offsets->PyFrameObject_lasti,
               task);
-        } else {
-          state->lasti = -2; // unsupported ptr_kind
         }
       } else {
-        bpf_probe_read_user_task(
-            &lasti,
-            sizeof(lasti),
-            cur_frame + offsets->PyFrameObject_lasti,
-            task);
+        // In Python 3.11+ lasti is caclulated from the _PyInterpreterFrame
+        // struct:
+        // ((int)((IF)->prev_instr - _PyCode_CODE((IF)->f_code)))
+        // See PyFrame_GetLasti() in cpython/Objects/frameobject.c
+        if (offsets->PyInterpreterFrame_prev_instr != DEFAULT_FIELD_OFFSET &&
+            offsets->PyInterpreterFrame_code != DEFAULT_FIELD_OFFSET &&
+            offsets->PyCodeObject_code_adaptive != DEFAULT_FIELD_OFFSET) {
+          void* prev_instr_ptr = NULL;
+          bpf_probe_read_user_task(
+              &prev_instr_ptr,
+              sizeof(void*),
+              state->frame_ptr + offsets->PyInterpreterFrame_prev_instr,
+              task);
+          if (prev_instr_ptr) {
+            // sizeof(_Py_CODEUNIT) is 2 bytes
+            lasti = (uint16_t*)prev_instr_ptr -
+                (uint16_t*)(code_ptr + offsets->PyCodeObject_code_adaptive);
+          }
+        }
       }
       state->lasti = lasti;
     }
@@ -526,22 +548,34 @@ __noinline bool pystacks_get_frame_data(int pid) {
   const OffsetConfig* const offsets = &state->offsets;
 
   struct task_struct* task;
-  if (get_task(pid, &task))
+  if (get_task(pid, &task)) {
     return false;
+  }
 
   void* code_ptr =
       get_code_ptr(state->frame_ptr, offsets, use_shadow_frame, task);
 
   get_names(state, state->frame_ptr, code_ptr, use_shadow_frame, task);
 
+  int ret_code = 0;
+
   // read next PyFrameObject/PyShadowFrame pointer
-  int ret_code = bpf_probe_read_user_task(
-      &state->frame_ptr,
-      sizeof(void*),
-      state->frame_ptr +
-          (use_shadow_frame ? offsets->PyShadowFrame_prev
-                            : offsets->PyFrameObject_back),
-      task);
+  if (offsets->PyVersion_major >= 3 && offsets->PyVersion_minor >= 12) {
+    ret_code = bpf_probe_read_user_task(
+        &state->frame_ptr,
+        sizeof(void*),
+        state->frame_ptr + offsets->PyInterpreterFrame_previous,
+        task);
+
+  } else {
+    ret_code = bpf_probe_read_user_task(
+        &state->frame_ptr,
+        sizeof(void*),
+        state->frame_ptr +
+            (use_shadow_frame ? offsets->PyShadowFrame_prev
+                              : offsets->PyFrameObject_back),
+        task);
+  }
 
   put_task(task);
 

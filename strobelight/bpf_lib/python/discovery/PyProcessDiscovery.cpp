@@ -562,7 +562,7 @@ PyProcessDiscovery::getPyModuleInfo(
       destOffsetResolver.mergeOffsetResolver(moduleInfo.offsetResolver);
       return moduleInfo.pyBinaryInfo;
     }
-    // Stop if we are running Python 3.12
+
     if (pyVersion && pyVersion->find(kCPython312) != std::string::npos) {
       strobelight_lib_print(
           STROBELIGHT_LIB_INFO,
@@ -570,9 +570,6 @@ PyProcessDiscovery::getPyModuleInfo(
               "CPython 3.12 detected. Support for 3.12 is currently experimental. Elf binary: {}",
               elfPath)
               .c_str());
-
-      destOffsetResolver.mergeOffsetResolver(moduleInfo.offsetResolver);
-      return moduleInfo.pyBinaryInfo;
     }
 
     PyPidData data = {};
