@@ -5,7 +5,8 @@
 
 #include "strobelight/bpf_lib/common/common.h"
 
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h> /* most used helpers: SEC, __always_inline, etc */

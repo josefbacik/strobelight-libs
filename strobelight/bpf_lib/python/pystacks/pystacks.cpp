@@ -2,7 +2,8 @@
 
 #include "strobelight/bpf_lib/python/pystacks/pystacks.h"
 
-#include <bpf/uapi/linux/bpf.h>
+// @oss-disable: #include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h> // @oss-enable
 #include <re2/re2.h>
 
 #include <fmt/ostream.h>

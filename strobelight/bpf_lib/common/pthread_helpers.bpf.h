@@ -3,7 +3,8 @@
 #ifndef __BPF_LIB_PTHREAD_HELPERS_H__
 #define __BPF_LIB_PTHREAD_HELPERS_H__
 
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 
 int probe_read_pthread_tls_slot(
     uint32_t key,

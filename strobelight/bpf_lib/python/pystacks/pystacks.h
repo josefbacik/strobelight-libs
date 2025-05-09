@@ -3,7 +3,8 @@
 #ifndef __BPF_LIB_PYSTACKS_H__
 #define __BPF_LIB_PYSTACKS_H__
 
-#include <bpf/uapi/linux/bpf.h>
+// @oss-disable: #include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h> // @oss-enable
 #include <sys/types.h>
 #include "strobelight/bpf_lib/include/stack_walker.h"
 #include "strobelight/bpf_lib/python/include/structs.h"

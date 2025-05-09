@@ -4,9 +4,11 @@
 #define __STROBELIGHT_BPF_LIB_COMMON_H__
 
 #ifndef __cplusplus
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 #else
-#include <bpf/uapi/linux/bpf.h>
+// @oss-disable: #include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h> // @oss-enable
 #include <ostream>
 #endif
 

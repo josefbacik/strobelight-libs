@@ -6,8 +6,6 @@ CLANG ?= clang
 LIBBPF_SRC := $(abspath ../../../libbpf/src)
 BPFTOOL_SRC := $(abspath ../../../bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
-UAPI_REL_PATH ?= bpf/uapi
-VMLINUX_OUTPUT := $(abspath $(OUTPUT)/bpf/vmlinux)
 BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
 ARCH ?= $(shell uname -m)
@@ -21,9 +19,10 @@ INSTALL_HEADERS := strobelight/bpf_lib/common/common.h strobelight/bpf_lib/pytho
 CXX_VERSION ?= -std=c++20
 
 SRC_DIRS := src
+EXTRA_CLFAGS ?=
 
-INCLUDES := -I$(OUTPUT) -I$(OUTPUT)/$(UAPI_REL_PATH) -I ../../..
-CFLAGS := -g -Wall $(CXX_VERSION)
+INCLUDES := -I$(OUTPUT) -I ../../..
+CFLAGS := -g -Wall $(CXX_VERSION) $(EXTRA_CFLAGS)
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
 LIBS := python_discovery pystacks
@@ -70,20 +69,20 @@ clean:
 	$(call msg,CLEAN)
 	$(Q)rm -rf $(OUTPUT)
 
-$(OUTPUT) $(OUTPUT)/pystacks $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT) $(VMLINUX_OUTPUT) $(OUTPUT)/$(UAPI_REL_PATH) $(OUTPUT)/strobelight/bpf_lib/python:
+$(OUTPUT) $(OUTPUT)/pystacks $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT) $(OUTPUT)/strobelight/bpf_lib/python:
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-vmlinux:| $(BPFTOOL) $(VMLINUX_OUTPUT)
-	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX_OUTPUT)/vmlinux.h
+vmlinux:| $(BPFTOOL) $(OUTPUT)
+	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(OUTPUT)/vmlinux.h
 .PHONY: vmlinux
 
 # Build libbpf
-$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf $(OUTPUT)/$(UAPI_REL_PATH)
+$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
 	$(call msg,LIB,$@)
 	$(Q)$(MAKE) -C $(LIBBPF_SRC) BUILD_STATIC_ONLY=1		      \
 		    OBJDIR=$(dir $@)/libbpf DESTDIR=$(dir $@)		      \
-		    INCLUDEDIR= LIBDIR= UAPIDIR=$(UAPI_REL_PATH) \
+		    INCLUDEDIR= LIBDIR= UAPIDIR= \
 		    install install_uapi_headers
 
 # Build bpftool
@@ -108,7 +107,7 @@ python_discovery: | $(LIBBPF_OBJ)
 %.tmp.bpf.o: %.bpf.c $(wildcard %.h) | $(OUTPUT) $(OUTPUT)/pystacks $(BPFTOOL) $(LIBBPF_OBJ) vmlinux
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) -g -O2 -mcpu=v3 -target bpf -D__$(ARCH)__		      \
-		     $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)		      \
+         $(EXTRA_CFLAGS) $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)                    \
 		     -c $(filter %.c,$^) -o $(OUTPUT)/$@
 
 util:
@@ -147,8 +146,8 @@ install: all
 	$(call install_file,$(OUTPUT),pystacks.a,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),pystacks.bpf.o,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),strobelight/bpf_lib/python/pystacks.subskel.h,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),bpf/uapi/linux/bpf.h,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),bpf/vmlinux/vmlinux.h,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),linux/bpf.h,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),vmlinux.h,$(INSTALL_DIR))
 
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/common/common.h,$(INSTALL_DIR))
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/python/pystacks/pystacks.bpf.h,$(INSTALL_DIR))

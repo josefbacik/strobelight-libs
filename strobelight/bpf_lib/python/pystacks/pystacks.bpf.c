@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-#include <bpf/vmlinux/vmlinux.h>
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>

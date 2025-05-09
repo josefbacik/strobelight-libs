@@ -5,7 +5,8 @@
 
 // clang-format off
 // disable format as bpf_core_read.h relies on types from vmlinux.h
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 #include <bpf/bpf_core_read.h>
 // clang-format on
 

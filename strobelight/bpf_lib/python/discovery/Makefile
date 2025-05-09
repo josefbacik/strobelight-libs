@@ -6,15 +6,13 @@ CLANG ?= clang
 LIBBPF_SRC := $(abspath ../../../../libbpf/src)
 BPFTOOL_SRC := $(abspath ../../../../bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
-UAPI_REL_PATH ?= bpf/uapi
-VMLINUX_OUTPUT := $(abspath $(OUTPUT)/bpf/vmlinux)
 BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
 ARCH ?= $(shell uname -m)
 
 CXX_VERSION ?= -std=c++20
 
-INCLUDES := -I$(OUTPUT) -I$(OUTPUT)/$(UAPI_REL_PATH) -I ../../../..
+INCLUDES := -I$(OUTPUT) -I ../../../..
 CFLAGS := -g -Wall $(CXX_VERSION)
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
@@ -51,20 +49,20 @@ clean:
 	$(call msg,CLEAN)
 	$(Q)rm -rf $(OUTPUT)
 
-$(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT) $(VMLINUX_OUTPUT) $(OUTPUT)/$(UAPI_REL_PATH):
+$(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-vmlinux:| $(BPFTOOL) $(VMLINUX_OUTPUT)
-	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX_OUTPUT)/vmlinux.h
+vmlinux:| $(BPFTOOL) $(OUTPUT)
+	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(OUTPUT)/vmlinux.h
 .PHONY: vmlinux
 
 # Build libbpf
-$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf $(OUTPUT)/$(UAPI_REL_PATH)
+$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
 	$(call msg,LIB,$@)
 	$(Q)$(MAKE) -C $(LIBBPF_SRC) BUILD_STATIC_ONLY=1		      \
 		    OBJDIR=$(dir $@)/libbpf DESTDIR=$(dir $@)		      \
-		    INCLUDEDIR= LIBDIR= UAPIDIR=$(UAPI_REL_PATH) \
+		    INCLUDEDIR= LIBDIR= UAPIDIR= \
 		    install install_uapi_headers
 
 # Build bpftool

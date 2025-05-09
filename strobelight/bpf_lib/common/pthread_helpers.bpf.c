@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 
 #include "strobelight/bpf_lib/common/bpf_read_helpers.bpf.h"
 #include "strobelight/bpf_lib/common/task_helpers.bpf.h"

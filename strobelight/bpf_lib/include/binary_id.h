@@ -16,7 +16,8 @@ namespace facebook::strobelight::bpf_lib {
 
 #else
 
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 #endif // __cplusplus
 
 // Combination of inode and device ID, as returned by fstat(), uniquely

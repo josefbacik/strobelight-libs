@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-#include <bpf/uapi/linux/bpf.h>
+// @oss-disable: #include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h> // @oss-enable
 #include <fmt/format.h>
 
 extern "C" {

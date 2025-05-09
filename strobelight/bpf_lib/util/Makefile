@@ -5,7 +5,6 @@ OUTPUT ?= $(abspath .output)
 CLANG ?= clang
 LIBBPF_SRC := $(abspath ../../../libbpf/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
-UAPI_REL_PATH ?= bpf/uapi
 ARCH ?= $(shell uname -m)
 
 CXX_VERSION ?= -std=c++20
@@ -43,14 +42,14 @@ $(call allow-override,LD,$(CROSS_COMPILE)ld)
 all: $(LIBS)
 
 # Build libbpf
-$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf $(OUTPUT)/$(UAPI_REL_PATH)
+$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
 	$(call msg,LIB,$@)
 	$(Q)$(MAKE) -C $(LIBBPF_SRC) BUILD_STATIC_ONLY=1		      \
 		    OBJDIR=$(dir $@)/libbpf DESTDIR=$(dir $@)		      \
-		    INCLUDEDIR= LIBDIR= UAPIDIR=$(UAPI_REL_PATH) \
+		    INCLUDEDIR= LIBDIR= UAPIDIR= \
 		    install install_uapi_headers
 
-$(OUTPUT) $(OUTPUT)/pid_info $(OUTPUT)/libbpf $(OUTPUT)/$(UAPI_REL_PATH):
+$(OUTPUT) $(OUTPUT)/pid_info $(OUTPUT)/libbpf:
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 

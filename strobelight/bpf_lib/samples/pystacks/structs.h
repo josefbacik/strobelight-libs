@@ -4,7 +4,8 @@
 #define __SAMPLE_PYSTACKS_STRUCTS_H__
 
 #ifdef __cplusplus
-#include <bpf/uapi/linux/bpf.h>
+// @oss-disable: #include <bpf/uapi/linux/bpf.h>
+#include <linux/bpf.h> // @oss-enable
 #endif
 
 #include "strobelight/bpf_lib/python/include/structs.h"

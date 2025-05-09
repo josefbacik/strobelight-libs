@@ -3,7 +3,8 @@
 #ifndef __PYSTACKS_BPF_H__
 #define __PYSTACKS_BPF_H__
 
-#include <bpf/vmlinux/vmlinux.h> /* all kernel types */
+// @oss-disable: #include <bpf/vmlinux/vmlinux.h>
+#include <vmlinux.h> // @oss-enable
 
 #include "strobelight/bpf_lib/common/common.h"
 #include "strobelight/bpf_lib/python/include/structs.h"
