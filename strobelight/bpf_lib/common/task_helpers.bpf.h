@@ -27,7 +27,8 @@ struct pid* get_task_pid_ptr(
     enum pid_type type);
 
 static __always_inline bool is_kernel_thread(struct task_struct* task) {
-  return (BPF_CORE_READ(task, flags) & (PF_KTHREAD | PF_IDLE)) != 0;
+  return (BPF_CORE_READ(task, flags) &
+          (BPF_LIB_PF_KTHREAD | BPF_LIB_PF_IDLE)) != 0;
 }
 
 unsigned int get_task_state(void* arg);

@@ -57,12 +57,13 @@ enum {
 // @lint-ignore-every CLANGTIDY facebook-hte-Typedef
 typedef uint64_t stackframe_t;
 
-#define MAX_STACK_DEPTH 127
-#define MAX_ASYNC_STACK_DEPTH 127
-#define MAX_BYTES_PER_STACK (MAX_STACK_DEPTH * sizeof(stackframe_t))
+#define BPF_LIB_MAX_STACK_DEPTH 127
+#define BPF_LIB_MAX_ASYNC_STACK_DEPTH 127
+#define BPF_LIB_MAX_BYTES_PER_STACK \
+  (BPF_LIB_MAX_STACK_DEPTH * sizeof(stackframe_t))
 
-#define MAX_KERNEL_STACK_DEPTH 32
+#define BPF_LIB_MAX_KERNEL_STACK_DEPTH 32
 
-#define DEFAULT_MAP_SIZE 1024
+#define BPF_LIB_DEFAULT_MAP_SIZE 1024
 
 #endif // __BPF_LIB_STRUCTS_H__

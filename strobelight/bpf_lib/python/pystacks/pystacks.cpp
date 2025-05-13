@@ -493,7 +493,7 @@ struct stack_walker_run* pystacks_init(
   run->skel_->bss.pystacks_prog_cfg->read_leaf_frame = false;
   run->skel_->bss.pystacks_prog_cfg->enable_debug_msgs = false;
   run->skel_->bss.pystacks_prog_cfg->enable_py_src_lines = true;
-  run->skel_->bss.pystacks_prog_cfg->stack_max_len = MAX_STACK_DEPTH;
+  run->skel_->bss.pystacks_prog_cfg->stack_max_len = BPF_LIB_MAX_STACK_DEPTH;
   run->skel_->bss.pystacks_prog_cfg->sample_interval = 0;
 
   return run;

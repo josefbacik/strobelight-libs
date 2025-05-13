@@ -3,13 +3,13 @@
 #include "strobelight/bpf_lib/common/pid_target_helpers.bpf.h"
 #include "strobelight/bpf_lib/common/task_helpers.bpf.h"
 
-#ifndef MAX_PID_TARGETS
-#define MAX_PID_TARGETS 1024
-#endif // MAX_PID_TARGETS
+#ifndef BPF_LIB_MAX_PID_TARGETS
+#define BPF_LIB_MAX_PID_TARGETS 1024
+#endif // BPF_LIB_MAX_PID_TARGETS
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, MAX_PID_TARGETS);
+  __uint(max_entries, BPF_LIB_MAX_PID_TARGETS);
   __type(key, pid_t);
   __type(value, bool);
 } targeted_pids SEC(".maps");

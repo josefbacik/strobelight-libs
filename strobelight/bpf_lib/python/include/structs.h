@@ -68,7 +68,7 @@ struct pystacks_message {
   uint64_t stack_len;
   uint64_t max_stack_depth;
 
-  struct stack_walker_frame buffer[MAX_STACK_DEPTH];
+  struct stack_walker_frame buffer[BPF_LIB_MAX_STACK_DEPTH];
 };
 
 struct pystacks_line_table {

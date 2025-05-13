@@ -9,16 +9,19 @@ namespace facebook::strobelight::bpf_lib {
 #define STROBELIGHT_STRINGIFY_HELPER(x) #x
 #define STROBELIGHT_STRINGIFY(x) STROBELIGHT_STRINGIFY_HELPER(x)
 
-#define MAKE_PROC_SYM_INFO(prefix, name, required) \
-  {                                                \
-    prefix STROBELIGHT_STRINGIFY(name), {          \
-      &processOffsets_.name, false, required       \
-    }                                              \
+#define BPF_LIB_MAKE_PROC_SYM_INFO(prefix, name, required) \
+  {                                                        \
+    prefix STROBELIGHT_STRINGIFY(name), {                  \
+      &processOffsets_.name, false, required               \
+    }                                                      \
   }
 
-#define REQUIRED_SYMBOL(name) MAKE_PROC_SYM_INFO("__strobe_", name, true)
-#define REQUIRED_SYMBOL_SF(name) MAKE_PROC_SYM_INFO("__strobe__", name, true)
-#define OPTIONAL_SYMBOL(name) MAKE_PROC_SYM_INFO("__strobe_", name, false)
+#define BPF_LIB_REQUIRED_SYMBOL(name) \
+  BPF_LIB_MAKE_PROC_SYM_INFO("__strobe_", name, true)
+#define BPF_LIB_REQUIRED_SYMBOL_SF(name) \
+  BPF_LIB_MAKE_PROC_SYM_INFO("__strobe__", name, true)
+#define BPF_LIB_OPTIONAL_SYMBOL(name) \
+  BPF_LIB_MAKE_PROC_SYM_INFO("__strobe_", name, false)
 
 static constexpr std::string_view kPyOffsetDefaultKey("default");
 
@@ -33,54 +36,54 @@ OffsetResolver::OffsetResolver()
    * we've seen this sym before)
    */
   symbolNameToInfo_ = {
-      REQUIRED_SYMBOL(PyObject_type),
-      REQUIRED_SYMBOL(PyTypeObject_name),
-      REQUIRED_SYMBOL(PyThreadState_frame),
-      REQUIRED_SYMBOL(PyThreadState_shadow_frame),
-      REQUIRED_SYMBOL(PyThreadState_thread),
-      REQUIRED_SYMBOL(PyFrameObject_back),
-      REQUIRED_SYMBOL(PyFrameObject_code),
-      OPTIONAL_SYMBOL(PyFrameObject_lasti),
-      REQUIRED_SYMBOL(PyFrameObject_localsplus),
-      REQUIRED_SYMBOL(PyFrameObject_gen),
-      OPTIONAL_SYMBOL(PyInterpreterFrame_code),
-      OPTIONAL_SYMBOL(PyInterpreterFrame_previous),
-      OPTIONAL_SYMBOL(PyInterpreterFrame_localsplus),
-      OPTIONAL_SYMBOL(PyInterpreterFrame_prev_instr),
-      OPTIONAL_SYMBOL(_PyCFrame_current_frame),
-      REQUIRED_SYMBOL(PyGenObject_gi_shadow_frame),
-      REQUIRED_SYMBOL(PyCodeObject_co_flags),
-      REQUIRED_SYMBOL(PyCodeObject_filename),
-      REQUIRED_SYMBOL(PyCodeObject_name),
-      REQUIRED_SYMBOL(PyCodeObject_varnames),
-      OPTIONAL_SYMBOL(PyCodeObject_firstlineno),
-      OPTIONAL_SYMBOL(PyCodeObject_linetable),
-      OPTIONAL_SYMBOL(PyCodeObject_code_adaptive),
-      REQUIRED_SYMBOL(PyTupleObject_item),
-      REQUIRED_SYMBOL(PyCodeObject_qualname),
-      REQUIRED_SYMBOL(PyCoroObject_cr_awaiter),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_prev),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_data),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PtrMask),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PtrKindMask),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_CODE_RT),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_PYCODE),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_PYFRAME),
-      REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_RTFS),
-      REQUIRED_SYMBOL(CodeRuntime_py_code),
-      REQUIRED_SYMBOL(RuntimeFrameState_py_code),
-      REQUIRED_SYMBOL(String_data),
-      REQUIRED_SYMBOL(TLSKey_offset),
-      REQUIRED_SYMBOL(TCurrentState_offset),
-      OPTIONAL_SYMBOL(PyGIL_offset),
-      OPTIONAL_SYMBOL(PyGIL_last_holder),
-      OPTIONAL_SYMBOL(PyBytesObject_data),
-      OPTIONAL_SYMBOL(PyVarObject_size),
-      OPTIONAL_SYMBOL(PyFrameObject_owner),
-      OPTIONAL_SYMBOL(PyGenObject_iframe),
-      REQUIRED_SYMBOL(PyVersion_major),
-      REQUIRED_SYMBOL(PyVersion_minor),
-      REQUIRED_SYMBOL(PyVersion_micro),
+      BPF_LIB_REQUIRED_SYMBOL(PyObject_type),
+      BPF_LIB_REQUIRED_SYMBOL(PyTypeObject_name),
+      BPF_LIB_REQUIRED_SYMBOL(PyThreadState_frame),
+      BPF_LIB_REQUIRED_SYMBOL(PyThreadState_shadow_frame),
+      BPF_LIB_REQUIRED_SYMBOL(PyThreadState_thread),
+      BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_back),
+      BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_code),
+      BPF_LIB_OPTIONAL_SYMBOL(PyFrameObject_lasti),
+      BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_localsplus),
+      BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_gen),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterFrame_code),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterFrame_previous),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterFrame_localsplus),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterFrame_prev_instr),
+      BPF_LIB_OPTIONAL_SYMBOL(_PyCFrame_current_frame),
+      BPF_LIB_REQUIRED_SYMBOL(PyGenObject_gi_shadow_frame),
+      BPF_LIB_REQUIRED_SYMBOL(PyCodeObject_co_flags),
+      BPF_LIB_REQUIRED_SYMBOL(PyCodeObject_filename),
+      BPF_LIB_REQUIRED_SYMBOL(PyCodeObject_name),
+      BPF_LIB_REQUIRED_SYMBOL(PyCodeObject_varnames),
+      BPF_LIB_OPTIONAL_SYMBOL(PyCodeObject_firstlineno),
+      BPF_LIB_OPTIONAL_SYMBOL(PyCodeObject_linetable),
+      BPF_LIB_OPTIONAL_SYMBOL(PyCodeObject_code_adaptive),
+      BPF_LIB_REQUIRED_SYMBOL(PyTupleObject_item),
+      BPF_LIB_REQUIRED_SYMBOL(PyCodeObject_qualname),
+      BPF_LIB_REQUIRED_SYMBOL(PyCoroObject_cr_awaiter),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_prev),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_data),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PtrMask),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PtrKindMask),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_CODE_RT),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_PYCODE),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_PYFRAME),
+      BPF_LIB_REQUIRED_SYMBOL_SF(PyShadowFrame_PYSF_RTFS),
+      BPF_LIB_REQUIRED_SYMBOL(CodeRuntime_py_code),
+      BPF_LIB_REQUIRED_SYMBOL(RuntimeFrameState_py_code),
+      BPF_LIB_REQUIRED_SYMBOL(String_data),
+      BPF_LIB_REQUIRED_SYMBOL(TLSKey_offset),
+      BPF_LIB_REQUIRED_SYMBOL(TCurrentState_offset),
+      BPF_LIB_OPTIONAL_SYMBOL(PyGIL_offset),
+      BPF_LIB_OPTIONAL_SYMBOL(PyGIL_last_holder),
+      BPF_LIB_OPTIONAL_SYMBOL(PyBytesObject_data),
+      BPF_LIB_OPTIONAL_SYMBOL(PyVarObject_size),
+      BPF_LIB_OPTIONAL_SYMBOL(PyFrameObject_owner),
+      BPF_LIB_OPTIONAL_SYMBOL(PyGenObject_iframe),
+      BPF_LIB_REQUIRED_SYMBOL(PyVersion_major),
+      BPF_LIB_REQUIRED_SYMBOL(PyVersion_minor),
+      BPF_LIB_REQUIRED_SYMBOL(PyVersion_micro),
   };
 }
 

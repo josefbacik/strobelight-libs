@@ -27,8 +27,8 @@ extern "C" {
 
 // Grabbed from kernel's kdev_t.h as these macros are redefined
 // differently in uapi/kdev_t.h and we want the kernel definition here
-#define KMINORBITS 20
-#define KMKDEV(ma, mi) (((ma) << KMINORBITS) | (mi))
+#define BPF_LIB_KMINORBITS 20
+#define BPF_LIB_KMKDEV(ma, mi) (((ma) << BPF_LIB_KMINORBITS) | (mi))
 
 namespace facebook::strobelight::bpf_lib::python {
 
@@ -334,7 +334,7 @@ bool PyProcessDiscovery::checkPyProcessImpl(
       const bool isPie = elf->isPie();
       const bool isExe = isPie || elf->eType() == ET_EXEC;
       const auto binaryId =
-          binary_id(KMKDEV(mm.devMajor, mm.devMinor), mm.inode);
+          binary_id(BPF_LIB_KMKDEV(mm.devMajor, mm.devMinor), mm.inode);
       // Get BinaryInfo + OffsetResolver for the module
       auto pyBinaryInfo =
           getPyModuleInfo(*elf, mm.name, binaryId, offsetResolver);
@@ -629,7 +629,8 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
   if (foundAllRequiredSymbols) {
     if (resolvedOffsets.offsets.PyVersion_major == 3 &&
         resolvedOffsets.offsets.PyVersion_minor == 10) {
-      if (resolvedOffsets.offsets.PyGIL_offset == DEFAULT_FIELD_OFFSET) {
+      if (resolvedOffsets.offsets.PyGIL_offset ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyGIL_offset =
             kCinder310OffsetConfig.PyGIL_offset;
         strobelight_lib_print(
@@ -640,7 +641,8 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 resolvedOffsets.offsets.PyGIL_offset)
                 .c_str());
       }
-      if (resolvedOffsets.offsets.PyGIL_last_holder == DEFAULT_FIELD_OFFSET) {
+      if (resolvedOffsets.offsets.PyGIL_last_holder ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyGIL_last_holder =
             kCinder310OffsetConfig.PyGIL_last_holder;
         strobelight_lib_print(
@@ -651,7 +653,8 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 resolvedOffsets.offsets.PyGIL_last_holder)
                 .c_str());
       }
-      if (resolvedOffsets.offsets.PyFrameObject_lasti == DEFAULT_FIELD_OFFSET) {
+      if (resolvedOffsets.offsets.PyFrameObject_lasti ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyFrameObject_lasti =
             kCinder310OffsetConfig.PyFrameObject_lasti;
         strobelight_lib_print(
@@ -663,7 +666,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 .c_str());
       }
       if (resolvedOffsets.offsets.PyCodeObject_firstlineno ==
-          DEFAULT_FIELD_OFFSET) {
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyCodeObject_firstlineno =
             kCinder310OffsetConfig.PyCodeObject_firstlineno;
         strobelight_lib_print(
@@ -675,7 +678,7 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 .c_str());
       }
       if (resolvedOffsets.offsets.PyCodeObject_linetable ==
-          DEFAULT_FIELD_OFFSET) {
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyCodeObject_linetable =
             kCinder310OffsetConfig.PyCodeObject_linetable;
         strobelight_lib_print(
@@ -686,7 +689,8 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 resolvedOffsets.offsets.PyCodeObject_linetable)
                 .c_str());
       }
-      if (resolvedOffsets.offsets.PyBytesObject_data == DEFAULT_FIELD_OFFSET) {
+      if (resolvedOffsets.offsets.PyBytesObject_data ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyBytesObject_data =
             kCinder310OffsetConfig.PyBytesObject_data;
         strobelight_lib_print(
@@ -697,7 +701,8 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 resolvedOffsets.offsets.PyBytesObject_data)
                 .c_str());
       }
-      if (resolvedOffsets.offsets.PyVarObject_size == DEFAULT_FIELD_OFFSET) {
+      if (resolvedOffsets.offsets.PyVarObject_size ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyVarObject_size =
             kCinder310OffsetConfig.PyVarObject_size;
         strobelight_lib_print(

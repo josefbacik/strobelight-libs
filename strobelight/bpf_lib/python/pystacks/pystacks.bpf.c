@@ -39,46 +39,46 @@ volatile struct {
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, pid_t);
   __type(value, PyPidData);
 } pystacks_pid_config SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, struct binary_id);
   __type(value, PyPidData);
 } pystacks_binaryid_config SEC(".maps");
 
-#define CO_COROUTINE 0x0080
-#define CO_ITERABLE_COROUTINE 0x0100
-#define CO_STATICALLY_COMPILED 0x4000000
+#define BPF_LIB_CO_COROUTINE 0x0080
+#define BPF_LIB_CO_ITERABLE_COROUTINE 0x0100
+#define BPF_LIB_CO_STATICALLY_COMPILED 0x4000000
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, struct pystacks_symbol);
   __type(value, symbol_id_t);
 } pystacks_symbols SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, symbol_id_t);
   __type(value, struct pystacks_line_table);
 } pystacks_linetables SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, struct pystacks_symbol);
   __type(value, int8_t);
 } pystacks_ending_frames SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
-  __uint(max_entries, DEFAULT_MAP_SIZE);
+  __uint(max_entries, BPF_LIB_DEFAULT_MAP_SIZE);
   __type(key, struct read_qualified_name);
   __type(value, int8_t);
 } pystacks_ending_frame_qualnames SEC(".maps");
@@ -88,7 +88,7 @@ struct sample_state_t {
   uint64_t cur_cpu;
   void* frame_ptr;
   bool sync_use_shadow_frame;
-  char long_file_name[FILE_NAME_TRYGET];
+  char long_file_name[BPF_LIB_FILE_NAME_TRYGET];
   struct pystacks_symbol sym;
   struct pystacks_line_table linetable;
   int32_t lasti;
@@ -105,7 +105,7 @@ static __always_inline struct sample_state_t* get_state() {
   return bpf_map_lookup_elem(&pystacks_state_heap, &zero);
 }
 
-#define GET_STATE()                           \
+#define BPF_LIB_GET_STATE()                   \
   struct sample_state_t* state = get_state(); \
   if (!state) {                               \
     return 0; /* should never happen */       \
@@ -197,7 +197,7 @@ static __always_inline void* get_gen_ptr(
     if (!data_ptr || ptr_kind == -1) {
       return NULL;
     }
-    const int gen_flags = CO_COROUTINE | CO_ITERABLE_COROUTINE;
+    const int gen_flags = BPF_LIB_CO_COROUTINE | BPF_LIB_CO_ITERABLE_COROUTINE;
     // JIT'd coroutines have their shadow frames embedded in the coroutine
     // object
     if (ptr_kind == offsets->PyShadowFrame_PYSF_CODE_RT &&
@@ -209,7 +209,7 @@ static __always_inline void* get_gen_ptr(
     // We can then get the coroutine obejct using PyFrameObject->f_gen
     else if (
         ptr_kind == offsets->PyShadowFrame_PYSF_PYFRAME &&
-        (co_flags & CO_COROUTINE)) {
+        (co_flags & BPF_LIB_CO_COROUTINE)) {
       if (bpf_probe_read_user_task(
               &gen_ptr,
               sizeof(void*),
@@ -222,7 +222,7 @@ static __always_inline void* get_gen_ptr(
     // returns NULL
   }
   // We check code flag first for old style coroutines, f_gen only exists in PY3
-  else if (co_flags & CO_COROUTINE) {
+  else if (co_flags & BPF_LIB_CO_COROUTINE) {
     bpf_probe_read_user_task(
         &gen_ptr,
         sizeof(void*),
@@ -266,10 +266,10 @@ static __always_inline void get_names(
   }
 
   if (pystacks_prog_cfg.enable_py_src_lines &&
-      offsets->PyCodeObject_linetable != DEFAULT_FIELD_OFFSET &&
-      offsets->PyVarObject_size != DEFAULT_FIELD_OFFSET &&
-      offsets->PyBytesObject_data != DEFAULT_FIELD_OFFSET &&
-      offsets->PyCodeObject_firstlineno != DEFAULT_FIELD_OFFSET) {
+      offsets->PyCodeObject_linetable != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyVarObject_size != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyBytesObject_data != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyCodeObject_firstlineno != BPF_LIB_DEFAULT_FIELD_OFFSET) {
     void* linetable_ptr = 0;
     if (bpf_probe_read_user_task(
             &linetable_ptr,
@@ -316,7 +316,8 @@ static __always_inline void get_names(
           } else {
             state->lasti = -2; // unsupported ptr_kind
           }
-        } else if (offsets->PyFrameObject_lasti != DEFAULT_FIELD_OFFSET) {
+        } else if (
+            offsets->PyFrameObject_lasti != BPF_LIB_DEFAULT_FIELD_OFFSET) {
           bpf_probe_read_user_task(
               &lasti,
               sizeof(lasti),
@@ -328,9 +329,11 @@ static __always_inline void get_names(
         // struct:
         // ((int)((IF)->prev_instr - _PyCode_CODE((IF)->f_code)))
         // See PyFrame_GetLasti() in cpython/Objects/frameobject.c
-        if (offsets->PyInterpreterFrame_prev_instr != DEFAULT_FIELD_OFFSET &&
-            offsets->PyInterpreterFrame_code != DEFAULT_FIELD_OFFSET &&
-            offsets->PyCodeObject_code_adaptive != DEFAULT_FIELD_OFFSET) {
+        if (offsets->PyInterpreterFrame_prev_instr !=
+                BPF_LIB_DEFAULT_FIELD_OFFSET &&
+            offsets->PyInterpreterFrame_code != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+            offsets->PyCodeObject_code_adaptive !=
+                BPF_LIB_DEFAULT_FIELD_OFFSET) {
           void* prev_instr_ptr = NULL;
           bpf_probe_read_user_task(
               &prev_instr_ptr,
@@ -351,7 +354,7 @@ static __always_inline void get_names(
   // read PyCodeObject's qualname into symbol
   // qualname should be a combination of classname and name
   int qualname_len = 0;
-  if (offsets->PyCodeObject_qualname != DEFAULT_FIELD_OFFSET) {
+  if (offsets->PyCodeObject_qualname != BPF_LIB_DEFAULT_FIELD_OFFSET) {
     void* qualname_ptr;
     if (bpf_probe_read_user_task(
             &qualname_ptr,
@@ -449,7 +452,7 @@ static __always_inline void get_names(
       IS_VALID_USER_SPACE_ADDRESS(filename_ptr)) {
     int len = bpf_probe_read_user_str_task(
         state->long_file_name,
-        FILE_NAME_TRYGET,
+        BPF_LIB_FILE_NAME_TRYGET,
         filename_ptr + offsets->String_data,
         task);
 
@@ -539,7 +542,7 @@ static __always_inline bool is_ending_frame(struct pystacks_symbol* sym) {
  * stack_info->frame_ptr with pointer to next PyFrameObject
  */
 __noinline bool pystacks_get_frame_data(int pid) {
-  GET_STATE();
+  BPF_LIB_GET_STATE();
 
   if (state == NULL) {
     return false;
@@ -593,7 +596,7 @@ add_symbol_to_buffer(struct pystacks_message* const py_msg) {
   const symbol_id_t symbol_id = get_py_symbol_id(&state->sym);
 
   uint64_t max_len = pystacks_prog_cfg.stack_max_len;
-  uint64_t max_offset = MAX_STACK_DEPTH;
+  uint64_t max_offset = BPF_LIB_MAX_STACK_DEPTH;
   uint64_t st_len = py_msg->stack_len;
 
   if (st_len >= 0 && st_len < max_len && st_len < max_offset) {
@@ -718,7 +721,7 @@ __hidden int walk_and_load_py_stack(
     return -PYSTACKS_ERROR; /* should never happen */
   }
 
-  GET_STATE();
+  BPF_LIB_GET_STATE();
 
   uint64_t i = 0;
   const uint32_t stack_max_len = pystacks_prog_cfg.stack_max_len;
@@ -737,7 +740,7 @@ __hidden int walk_and_load_py_stack(
   bool last_frame_read = false;
   int pid = task ? BPF_CORE_READ(task, pid) : 0;
 
-  for (; i < stack_max_len && i < MAX_STACK_DEPTH &&
+  for (; i < stack_max_len && i < BPF_LIB_MAX_STACK_DEPTH &&
        (last_frame_read = pystacks_get_frame_data(pid));
        ++i) {
     add_symbol_to_buffer(py_msg);
@@ -789,7 +792,7 @@ static __always_inline void* get_frame_ptr(
     struct task_struct* task) {
   void* frame_ptr;
 
-  if (offsets->PyThreadState_frame != DEFAULT_FIELD_OFFSET) {
+  if (offsets->PyThreadState_frame != BPF_LIB_DEFAULT_FIELD_OFFSET) {
     if (bpf_probe_read_user_task(
             &frame_ptr,
             sizeof(void*),
@@ -823,18 +826,18 @@ static __always_inline void* get_frame_ptr(
 static __always_inline bool use_shadow_frame(
     const OffsetConfig* const offsets) {
   // Use of shadow frames rely on these offsets and thus they must be defined
-  // These offsets are defaulted to an invalid offset of DEFAULT_FIELD_OFFSET in
-  // the offset resolver
-  return offsets->PyThreadState_shadow_frame != DEFAULT_FIELD_OFFSET &&
-      offsets->PyGenObject_gi_shadow_frame != DEFAULT_FIELD_OFFSET &&
-      offsets->PyCoroObject_cr_awaiter != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_data != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_prev != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_PtrMask != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_PtrKindMask != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_PYSF_CODE_RT != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_PYSF_PYCODE != DEFAULT_FIELD_OFFSET &&
-      offsets->PyShadowFrame_PYSF_PYFRAME != DEFAULT_FIELD_OFFSET;
+  // These offsets are defaulted to an invalid offset of
+  // BPF_LIB_DEFAULT_FIELD_OFFSET in the offset resolver
+  return offsets->PyThreadState_shadow_frame != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyGenObject_gi_shadow_frame != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyCoroObject_cr_awaiter != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_data != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_prev != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_PtrMask != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_PtrKindMask != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_PYSF_CODE_RT != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_PYSF_PYCODE != BPF_LIB_DEFAULT_FIELD_OFFSET &&
+      offsets->PyShadowFrame_PYSF_PYFRAME != BPF_LIB_DEFAULT_FIELD_OFFSET;
 }
 
 static __always_inline int
@@ -965,7 +968,7 @@ __hidden int pystacks_read_stacks_task(
     return -PYSTACKS_NON_PY_PROCESS;
   }
 
-  GET_STATE();
+  BPF_LIB_GET_STATE();
 
   state->offsets = pid_data->offsets;
   state->cur_cpu = bpf_get_smp_processor_id();

@@ -9,7 +9,7 @@
 #include "strobelight/bpf_lib/common/common.h"
 #include "strobelight/bpf_lib/python/include/structs.h"
 
-#define FILE_NAME_TRYGET 256
+#define BPF_LIB_FILE_NAME_TRYGET 256
 
 enum {
   PYSTACKS_STATUS_UNKNOWN = 0,
