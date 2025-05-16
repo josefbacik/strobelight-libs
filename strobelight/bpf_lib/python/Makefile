@@ -19,7 +19,7 @@ INSTALL_HEADERS := strobelight/bpf_lib/common/common.h strobelight/bpf_lib/pytho
 CXX_VERSION ?= -std=c++20
 
 SRC_DIRS := src
-EXTRA_CLFAGS ?=
+EXTRA_CFLAGS ?=
 
 INCLUDES := -I$(OUTPUT) -I ../../..
 CFLAGS := -g -Wall $(CXX_VERSION) $(EXTRA_CFLAGS)
