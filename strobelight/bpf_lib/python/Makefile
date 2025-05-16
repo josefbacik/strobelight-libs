@@ -13,7 +13,7 @@ ARCH ?= $(shell uname -m)
 STROBELIGHT_ROOT := ../../..
 
 INSTALL_DIR ?=
-INSTALL_LIBS := pystacks.a python_discovery.a .util.a pystacks.a strobelight/bpf_lib/python/pystacks.subskel.h
+INSTALL_LIBS := libpystacks.a libpython_discovery.a libstrobelight_util.a strobelight/bpf_lib/python/pystacks.subskel.h
 INSTALL_HEADERS := strobelight/bpf_lib/common/common.h strobelight/bpf_lib/python/pystacks/pystacks.bpf.h strobelight/bpf_lib/python/pystacks/pystacks.h strobelight/bpf_lib/python/include/structs.h strobelight/bpf_lib/include/stack_walker.h strobelight/bpf_lib/include/structs.h strobelight/bpf_lib/include/logging.h
 
 CXX_VERSION ?= -std=c++20
@@ -22,7 +22,7 @@ SRC_DIRS := src
 EXTRA_CFLAGS ?=
 
 INCLUDES := -I$(OUTPUT) -I ../../..
-CFLAGS := -g -Wall $(CXX_VERSION) $(EXTRA_CFLAGS)
+CFLAGS := -fPIE -g -Wall $(CXX_VERSION) $(EXTRA_CFLAGS)
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
 LIBS := python_discovery pystacks
@@ -126,8 +126,8 @@ pystacks.bpf: | $(patsubst %.bpf.c,%.tmp.bpf.o,$(PYSTACKS_BPF_SRCS)) $(BPFTOOL) 
 
 # pystacks c interface
 pystacks: python_discovery $(OBJS) pystacks.bpf $(OUTPUT)/pystacks/pystacks.cpp.o util
-	$(call msg,LIB,$@)
-	$(CLANG) -v $(OBJS) $(OUTPUT)/pystacks/pystacks.cpp.o $(OUTPUT)/util.a -o $(OUTPUT)/$@.a $(ALL_LDFLAGS) --emit-static-lib
+	$(call msg,LIB,$@,$(EXTRA_CFLAGS))
+	$(CLANG) -v $(OBJS) $(OUTPUT)/pystacks/pystacks.cpp.o $(OUTPUT)/libstrobelight_util.a -o $(OUTPUT)/lib$@.a $(ALL_LDFLAGS) --emit-static-lib
 .PHONY: pystacks
 
 
@@ -140,10 +140,9 @@ endef
 
 install: all
 	$(call msg,INSTALL,$@,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),pystacks.a,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),python_discovery.a,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),util.a,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),pystacks.a,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),libpystacks.a,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),libpython_discovery.a,$(INSTALL_DIR))
+	$(call install_file,$(OUTPUT),libstrobelight_util.a,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),pystacks.bpf.o,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),strobelight/bpf_lib/python/pystacks.subskel.h,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),linux/bpf.h,$(INSTALL_DIR))

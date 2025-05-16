@@ -118,7 +118,7 @@ pystacks_sample.bpf: | $(BPF_OBJS) $(BPFTOOL) $(LIBBPF_OBJ) $(OUTPUT) $(OUTPUT)/
 
 pystacks_sample:  pystacks_sample.bpf $(OBJS) $(LIBBPF_OBJ)
 	$(call msg,LIB,$@)
-	$(CLANG) -v -mcpu=v3 $(OBJS) $(OUTPUT)/pystacks.a $(OUTPUT)/python_discovery.a $(OUTPUT)/util.a $(OUTPUT)/libbpf.a -o $(OUTPUT)/$@ $(ALL_LDFLAGS)
+	$(CLANG) -v -mcpu=v3 $(OBJS) $(OUTPUT)/libpystacks.a $(OUTPUT)/libpython_discovery.a $(OUTPUT)/libstrobelight_util.a $(OUTPUT)/libbpf.a -o $(OUTPUT)/$@ $(ALL_LDFLAGS)
 .PHONY: pystacks
 
 # delete failed targets

@@ -13,7 +13,7 @@ ARCH ?= $(shell uname -m)
 CXX_VERSION ?= -std=c++20
 
 INCLUDES := -I$(OUTPUT) -I ../../../..
-CFLAGS := -g -Wall $(CXX_VERSION)
+CFLAGS := -g -Wall $(CXX_VERSION) -fPIE
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
 LIBS := python_discovery
@@ -78,7 +78,7 @@ $(OUTPUT)/%.cpp.o: %.cpp | $(LIBBPF_OBJ) $(BPFTOOL) vmlinux
 	$(CLANG) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 python_discovery: $(OBJS) | $(LIBBPF_OBJ)
-	$(CLANG) -v $(OBJS) -o $(OUTPUT)/$@.a $(ALL_LDFLAGS) --emit-static-lib
+	$(CLANG) -v $(OBJS) -o $(OUTPUT)/lib$@.a $(ALL_LDFLAGS) --emit-static-lib
 
 # delete failed targets
 .DELETE_ON_ERROR:
