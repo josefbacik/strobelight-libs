@@ -34,6 +34,7 @@
 struct stack_walker_opts {
   size_t pidCount;
   pid_t* pids;
+  bool manualSymbolRefresh;
 };
 
 // @lint-ignore-every CLANGTIDY facebook-hte-Typedef

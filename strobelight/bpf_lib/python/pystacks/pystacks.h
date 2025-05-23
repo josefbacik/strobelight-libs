@@ -49,6 +49,8 @@ int pystacks_symbolize_filename_line(
 
 void pystacks_free(struct stack_walker_run* run);
 
+void pystacks_load_symbols(struct stack_walker_run* run);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -37,6 +37,8 @@ extern "C" {
 struct stack_walker_run {
   pystacks_subskel* skel_{nullptr};
 
+  bool manualSymbolRefresh_{};
+
   std::shared_ptr<facebook::pid_info::SharedPidInfoCache> pidInfoCache_;
   std::shared_ptr<facebook::strobelight::bpf_lib::python::PyProcessDiscovery>
       pyProcessDiscovery_;
@@ -367,10 +369,12 @@ PySymbolLookupResult resolvePySymbol(
   PySymbolLookupResult result;
   if (!lockedContains(run->symbols_, run->mapsMutex_, id)) {
     // if we have a miss, reload from bpf and try again
-    initPySymbols(
-        run,
-        bpf_map__fd(run->skel_->maps.pystacks_symbols),
-        bpf_map__fd(run->skel_->maps.pystacks_linetables));
+    if (!run->manualSymbolRefresh_) {
+      initPySymbols(
+          run,
+          bpf_map__fd(run->skel_->maps.pystacks_symbols),
+          bpf_map__fd(run->skel_->maps.pystacks_linetables));
+    }
 
     if (!lockedContains(run->symbols_, run->mapsMutex_, id)) {
       return result;
@@ -474,6 +478,8 @@ struct stack_walker_run* pystacks_init(
     return nullptr;
   }
 
+  run->manualSymbolRefresh_ = opts.manualSymbolRefresh;
+
   run->skel_ = pystacks_subskel__open(bpf_skel_obj),
   run->pidInfoCache_ = facebook::pid_info::getSharedPidInfoCache(),
 
@@ -550,6 +556,13 @@ int pystacks_symbolize_filename_line(
   }
 
   return std::min(filename_len - 1, filename_symbol.file.size());
+}
+
+void pystacks_load_symbols(struct stack_walker_run* run) {
+  initPySymbols(
+      run,
+      bpf_map__fd(run->skel_->maps.pystacks_symbols),
+      bpf_map__fd(run->skel_->maps.pystacks_linetables));
 }
 
 } // extern "C"
