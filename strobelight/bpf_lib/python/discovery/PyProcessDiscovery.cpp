@@ -16,7 +16,6 @@ extern "C" {
 
 #include <elf.h>
 #include <fmt/core.h>
-#include <fmt/format.h>
 #include <fmt/ostream.h> // needed for PidInfo in formatter
 #include <re2/re2.h>
 #include <strobelight/bpf_lib/util/ElfFile.h>
