@@ -19,10 +19,13 @@ INSTALL_HEADERS := strobelight/bpf_lib/common/common.h strobelight/bpf_lib/pytho
 CXX_VERSION ?= -std=c++20
 
 SRC_DIRS := src
-EXTRA_CFLAGS ?=
+
+# specify directory containing vmlinux.h 
+# if not provided, the file will be generated
+VMLINUX_INCLUDE ?=
 
 INCLUDES := -I$(OUTPUT) -I ../../..
-CFLAGS := -fPIE -g -Wall $(CXX_VERSION) $(EXTRA_CFLAGS)
+CFLAGS := -fPIE -g -Wall $(CXX_VERSION)
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS) -lstdc++
 
 LIBS := python_discovery pystacks
@@ -73,8 +76,21 @@ $(OUTPUT) $(OUTPUT)/pystacks $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT) $(OUTPUT)/strobe
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
+ifeq ($(strip $(VMLINUX_INCLUDE)),)
 vmlinux:| $(BPFTOOL) $(OUTPUT)
+	$(call msg,BPFTOOL,$@)
 	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(OUTPUT)/vmlinux.h
+
+install_vmlinux: | vmlinux
+	$(call install_file,$(OUTPUT),vmlinux.h,$(INSTALL_DIR)) \
+
+else
+vmlinux:
+	$(call msg,NOOP,$@)
+
+install_vmlinux:
+	$(call msg,NOOP,$@)
+endif
 .PHONY: vmlinux
 
 # Build libbpf
@@ -107,7 +123,7 @@ python_discovery: | $(LIBBPF_OBJ)
 %.tmp.bpf.o: %.bpf.c $(wildcard %.h) | $(OUTPUT) $(OUTPUT)/pystacks $(BPFTOOL) $(LIBBPF_OBJ) vmlinux
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) -g -O2 -mcpu=v3 -target bpf -D__$(ARCH)__		      \
-         $(EXTRA_CFLAGS) $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)                    \
+         $(VMLINUX_INCLUDE) $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)                    \
 		     -c $(filter %.c,$^) -o $(OUTPUT)/$@
 
 util:
@@ -126,7 +142,7 @@ pystacks.bpf: | $(patsubst %.bpf.c,%.tmp.bpf.o,$(PYSTACKS_BPF_SRCS)) $(BPFTOOL) 
 
 # pystacks c interface
 pystacks: python_discovery $(OBJS) pystacks.bpf $(OUTPUT)/pystacks/pystacks.cpp.o util
-	$(call msg,LIB,$@,$(EXTRA_CFLAGS))
+	$(call msg,LIB,$@)
 	$(CLANG) -v $(OBJS) $(OUTPUT)/pystacks/pystacks.cpp.o $(OUTPUT)/libstrobelight_util.a -o $(OUTPUT)/lib$@.a $(ALL_LDFLAGS) --emit-static-lib
 .PHONY: pystacks
 
@@ -138,7 +154,7 @@ define install_file =
 	$(Q)cp $1/$2 $3/$2
 endef
 
-install: all
+install: all install_vmlinux
 	$(call msg,INSTALL,$@,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),libpystacks.a,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),libpython_discovery.a,$(INSTALL_DIR))
@@ -146,7 +162,6 @@ install: all
 	$(call install_file,$(OUTPUT),pystacks.bpf.o,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),strobelight/bpf_lib/python/pystacks.subskel.h,$(INSTALL_DIR))
 	$(call install_file,$(OUTPUT),linux/bpf.h,$(INSTALL_DIR))
-	$(call install_file,$(OUTPUT),vmlinux.h,$(INSTALL_DIR))
 
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/common/common.h,$(INSTALL_DIR))
 	$(call install_file,$(abspath $(STROBELIGHT_ROOT)),strobelight/bpf_lib/python/pystacks/pystacks.bpf.h,$(INSTALL_DIR))

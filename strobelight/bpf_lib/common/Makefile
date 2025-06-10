@@ -10,6 +10,10 @@ BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
 ARCH ?= $(shell uname -m)
 
+# specify directory containing vmlinux.h 
+# if not provided, the file will be generated
+VMLINUX_INCLUDE ?=
+
 # Use our own libbpf API headers and Linux UAPI headers distributed with
 # libbpf to avoid dependency on system-wide headers, which could be missing or
 # outdated
@@ -65,8 +69,14 @@ $(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
+ifeq ($(strip $(VMLINUX_INCLUDE)),)
 vmlinux:| $(BPFTOOL) $(OUTPUT)
+	$(call msg,BPFTOOL,$@)
 	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(OUTPUT)/vmlinux.h
+else
+vmlinux:
+	$(call msg,NOOP,$@)
+endif
 .PHONY: vmlinux
 
 # Build libbpf
@@ -86,7 +96,7 @@ $(BPFTOOL): | $(BPFTOOL_OUTPUT)
 %.tmp.bpf.o: %.bpf.c $(LIBBPF_OBJ) $(wildcard %.h) | $(OUTPUT) $(BPFTOOL) vmlinux
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) -g -O2 -target bpf -D__$(ARCH)__		      \
-		     $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)		      \
+		     $(VMLINUX_INCLUDE) $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)		      \
 		     -c $(filter %.c,$^) -o $(OUTPUT)/$@
 
 # common lib

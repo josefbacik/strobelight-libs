@@ -53,10 +53,6 @@ $(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-vmlinux:| $(BPFTOOL) $(OUTPUT)
-	$(Q)$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(OUTPUT)/vmlinux.h
-.PHONY: vmlinux
-
 # Build libbpf
 $(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
 	$(call msg,LIB,$@)
@@ -73,7 +69,7 @@ $(BPFTOOL): | $(BPFTOOL_OUTPUT)
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
 OBJS := $(SRCS:%=$(OUTPUT)/%.o)
 
-$(OUTPUT)/%.cpp.o: %.cpp | $(LIBBPF_OBJ) $(BPFTOOL) vmlinux
+$(OUTPUT)/%.cpp.o: %.cpp | $(LIBBPF_OBJ) $(BPFTOOL)
 	$(call msg,CLANG,$@)
 	$(CLANG) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
