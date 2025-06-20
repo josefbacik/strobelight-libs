@@ -614,6 +614,7 @@ add_symbol_to_buffer(struct pystacks_message* const py_msg) {
   return st_len;
 }
 
+#ifdef STROBELIGHT_READ_LEAF_FRAME
 /*
   *** Problem ***
   The ready to run frame is passed as an argument to _PyEval_EvalFrameDefault,
@@ -678,6 +679,7 @@ static __always_inline void read_leaf_frame(
     add_symbol_to_buffer(py_msg);
   }
 }
+#endif
 
 static int set_py_stack_status(
     uint8_t* const stack_status,
@@ -726,6 +728,7 @@ __hidden int walk_and_load_py_stack(
   uint64_t i = 0;
   const uint32_t stack_max_len = pystacks_prog_cfg.stack_max_len;
 
+#ifdef STROBELIGHT_READ_LEAF_FRAME
   if (pystacks_prog_cfg.read_leaf_frame) {
     /*
      * At the time when uprobe attached to a native function (e.g.
@@ -736,6 +739,7 @@ __hidden int walk_and_load_py_stack(
     read_leaf_frame(ctx, py_msg, task);
     ++i;
   }
+#endif
 
   bool last_frame_read = false;
   int pid = task ? BPF_CORE_READ(task, pid) : 0;
