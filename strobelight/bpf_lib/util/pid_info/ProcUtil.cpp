@@ -3,7 +3,6 @@
 #include "strobelight/bpf_lib/util/pid_info/ProcUtil.h"
 
 #include <sys/capability.h> // @manual
-#include <sys/types.h>
 #include <filesystem>
 #include <map>
 #include <string>
