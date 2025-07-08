@@ -42,15 +42,24 @@ __hidden pid_t get_pid_nr_ns(struct pid* pid, struct pid_namespace* ns) {
   return nr;
 }
 
-__hidden pid_t get_task_ns_pid(const struct task_struct* task) {
+static __always_inline pid_t
+get_task_ns_pid_type(const struct task_struct* task, enum pid_type type) {
   if (!task) {
     task = (struct task_struct*)bpf_get_current_task();
   }
   struct pid_namespace* ns = get_task_pid_ns(task);
-  struct pid* p = get_task_pid_ptr(task, PIDTYPE_PID);
+  struct pid* p = get_task_pid_ptr(task, type);
   return get_pid_nr_ns(p, ns);
 }
 
-__hidden pid_t get_ns_pid(void) {
+__hidden pid_t get_task_ns_tgid(const struct task_struct* task) {
+  return get_task_ns_pid_type(task, PIDTYPE_TGID);
+}
+
+__hidden pid_t get_task_ns_pid(const struct task_struct* task) {
+  return get_task_ns_pid_type(task, PIDTYPE_PID);
+}
+
+pid_t get_ns_pid(void) {
   return get_task_ns_pid(NULL);
 }
