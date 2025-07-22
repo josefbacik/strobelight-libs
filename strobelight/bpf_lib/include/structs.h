@@ -54,7 +54,7 @@ enum {
   BPF_LIB_TORCHSTACKS_MESSAGE = 7,
 };
 
-// @lint-ignore-every CLANGTIDY facebook-hte-Typedef
+// @lint-ignore-every CLANGTIDY modernize-use-using
 typedef uint64_t stackframe_t;
 
 #define BPF_LIB_MAX_STACK_DEPTH 127

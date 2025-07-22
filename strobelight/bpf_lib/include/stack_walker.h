@@ -37,7 +37,7 @@ struct stack_walker_opts {
   bool manualSymbolRefresh;
 };
 
-// @lint-ignore-every CLANGTIDY facebook-hte-Typedef
+// @lint-ignore-every CLANGTIDY modernize-use-using
 typedef uint32_t symbol_id_t;
 
 struct stack_walker_frame {
