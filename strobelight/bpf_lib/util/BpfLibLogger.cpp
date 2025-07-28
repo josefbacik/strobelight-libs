@@ -23,8 +23,9 @@ void strobelight_lib_print(
   strobelight_lib_print_fn_t print_fn;
 
   print_fn = __atomic_load_n(&__strobelight_lib_printer, __ATOMIC_RELAXED);
-  if (!print_fn)
+  if (!print_fn) {
     return;
+  }
 
   old_errno = errno;
 
