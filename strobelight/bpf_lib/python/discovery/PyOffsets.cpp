@@ -15,6 +15,10 @@ std::ostream& operator<<(std::ostream& os, const OffsetConfig& offsets) {
      << offsets.PyThreadState_shadow_frame
      << "\n\t OffsetConfig.PyThreadState_thread : "
      << offsets.PyThreadState_thread
+     << "\n\t OffsetConfig.PyThreadState_interp : "
+     << offsets.PyThreadState_interp
+     << "\n\t OffsetConfig.PyInterpreterState_modules : "
+     << offsets.PyInterpreterState_modules
      << "\n\t OffsetConfig.PyFrameObject_back : " << offsets.PyFrameObject_back
      << "\n\t OffsetConfig.PyFrameObject_code : " << offsets.PyFrameObject_code
      << "\n\t OffsetConfig.PyFrameObject_lasti : "

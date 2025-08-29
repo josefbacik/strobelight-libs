@@ -43,6 +43,9 @@ extern const OffsetConfig kPy312OffsetConfig = [] {
   // cframe wraps around frame
   config.PyThreadState_cframe = 56; // offsetof(PyThreadState, cframe)
   config.PyThreadState_thread = 136; // offsetof(PyThreadState, thread_id)
+  config.PyThreadState_interp = 16; // offsetof(PyThreadState, interp)
+  config.PyInterpreterState_modules =
+      944; // offsetof(PyInterpreterState, modules)
 
   // replaces frame
   config._PyCFrame_current_frame = 0; // offsetof(_PyCFrame, current_frame)

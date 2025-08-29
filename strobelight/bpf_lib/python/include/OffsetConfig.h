@@ -17,6 +17,8 @@ struct OffsetConfig {
         PyThreadState_cframe(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyThreadState_shadow_frame(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyThreadState_thread(BPF_LIB_DEFAULT_FIELD_OFFSET),
+        PyThreadState_interp(BPF_LIB_DEFAULT_FIELD_OFFSET),
+        PyInterpreterState_modules(BPF_LIB_DEFAULT_FIELD_OFFSET),
         _PyCFrame_current_frame(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyFrameObject_back(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyFrameObject_code(BPF_LIB_DEFAULT_FIELD_OFFSET),
@@ -73,6 +75,8 @@ typedef struct {
   uintptr_t PyThreadState_cframe;
   uintptr_t PyThreadState_shadow_frame;
   uintptr_t PyThreadState_thread;
+  uintptr_t PyThreadState_interp;
+  uintptr_t PyInterpreterState_modules;
   uintptr_t _PyCFrame_current_frame;
   uintptr_t PyFrameObject_back;
   uintptr_t PyFrameObject_code;

@@ -41,6 +41,8 @@ OffsetResolver::OffsetResolver()
       BPF_LIB_REQUIRED_SYMBOL(PyThreadState_frame),
       BPF_LIB_REQUIRED_SYMBOL(PyThreadState_shadow_frame),
       BPF_LIB_REQUIRED_SYMBOL(PyThreadState_thread),
+      BPF_LIB_OPTIONAL_SYMBOL(PyThreadState_interp),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterState_modules),
       BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_back),
       BPF_LIB_REQUIRED_SYMBOL(PyFrameObject_code),
       BPF_LIB_OPTIONAL_SYMBOL(PyFrameObject_lasti),

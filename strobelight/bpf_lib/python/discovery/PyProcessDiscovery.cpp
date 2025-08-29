@@ -664,6 +664,30 @@ OffsetResolution PyProcessDiscovery::resolveOffsets(
                 resolvedOffsets.offsets.PyFrameObject_lasti)
                 .c_str());
       }
+      if (resolvedOffsets.offsets.PyThreadState_interp ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
+        resolvedOffsets.offsets.PyThreadState_interp =
+            kCinder310OffsetConfig.PyThreadState_interp;
+        strobelight_lib_print(
+            STROBELIGHT_LIB_INFO,
+            fmt::format(
+                "Patched 'PyThreadState_interp' for cinder runtime {}: {}",
+                elfPath,
+                resolvedOffsets.offsets.PyThreadState_interp)
+                .c_str());
+      }
+      if (resolvedOffsets.offsets.PyInterpreterState_modules ==
+          BPF_LIB_DEFAULT_FIELD_OFFSET) {
+        resolvedOffsets.offsets.PyInterpreterState_modules =
+            kCinder310OffsetConfig.PyInterpreterState_modules;
+        strobelight_lib_print(
+            STROBELIGHT_LIB_INFO,
+            fmt::format(
+                "Patched 'PyInterpreterState_modules' for cinder runtime {}: {}",
+                elfPath,
+                resolvedOffsets.offsets.PyInterpreterState_modules)
+                .c_str());
+      }
       if (resolvedOffsets.offsets.PyCodeObject_firstlineno ==
           BPF_LIB_DEFAULT_FIELD_OFFSET) {
         resolvedOffsets.offsets.PyCodeObject_firstlineno =
