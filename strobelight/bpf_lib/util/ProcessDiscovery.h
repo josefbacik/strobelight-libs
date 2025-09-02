@@ -14,13 +14,14 @@ typedef std::function<PidIterControl(pid_info::SharedPidInfo& pidInfo)>
 typedef std::function<void(pid_info::SharedPidInfo& pidInfo)> VoidPidCallback;
 
 /* Use in combination with iteratePids when doing typical 'discovery'
- phase where all pids are examined by independent discovery logic e.g.:
-
- std::vector<VoidPidCallback> discoCbs{checkStrobemeta, checkHHVM};
- PidCallback discovery = chainDiscoveryCallbacks(discoCbs);
- iteratePids(discovery);
-
-Meant to reduce duplicate iteration of all pids*/
+ * phase where all pids are examined by independent discovery logic e.g.:
+ *
+ * std::vector<VoidPidCallback> discoCbs{checkStrobemeta, checkHHVM};
+ * PidCallback discovery = chainDiscoveryCallbacks(discoCbs);
+ * iteratePids(discovery);
+ *
+ * Meant to reduce duplicate iteration of all pids
+ */
 PidCallback chainDiscoveryCallbacks(
     const std::vector<VoidPidCallback>& callbacks);
 
