@@ -124,6 +124,7 @@ class ProcPidInfo {
   std::string getRssAnon() const;
   std::string getRssFile() const;
   std::string getRssShmem() const;
+  std::string getAnonHugePage() const;
 
   uint64_t getVmSizeBytes() const;
   uint64_t getVmHwmBytes() const;
@@ -137,6 +138,7 @@ class ProcPidInfo {
   uint64_t getPssFileBytes() const;
   uint64_t getPssShmemBytes() const;
   uint64_t getSwapPssBytes() const;
+  uint64_t getAnonHugePageBytes() const;
 
   uint64_t getSigBlk() const;
   bool testSigBlk(int signum) const;
@@ -175,6 +177,8 @@ class ProcPidInfo {
 
   // Refresh Process basic attributes
   bool updateInfo();
+  // Refresh Process proportional set size stats
+  bool updatePssStats();
 
   // Get all TIDs of active Threads of the Process
   std::vector<pid_t> getRunningThreads() const;
@@ -253,6 +257,9 @@ class ProcPidInfo {
   // (Re-)Read and parse basic process attributes
   bool readProcInfo();
 
+  // (Re-)Read and parse process memory stats including PSS.
+  bool readProcSmapsRollup();
+
   // (Re-)Reads process stats including CPU time, RSS, Thread count, etc.
   bool readProcStat();
 
@@ -316,11 +323,12 @@ class ProcPidInfo {
   uint64_t sigcgt_;
 
   // Process proportional memory attributes read from /proc/<pid>/smaps_rollup
-  uint64_t pss_;
-  uint64_t pssanon_;
-  uint64_t pssfile_;
-  uint64_t pssshmem_;
-  uint64_t swappss_;
+  uint64_t pss_{};
+  uint64_t pssanon_{};
+  uint64_t pssfile_{};
+  uint64_t pssshmem_{};
+  uint64_t swappss_{};
+  uint64_t anonhugepage_{};
 
   // Process constant attributes only read when requested
   Lazy<std::chrono::system_clock::time_point> startTime_;

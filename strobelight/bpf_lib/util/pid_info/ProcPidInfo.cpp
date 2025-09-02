@@ -105,6 +105,15 @@ static constexpr std::string_view kRssAnonPrefix = "RssAnon:\t";
 static constexpr std::string_view kRssFilePrefix = "RssFile:\t";
 static constexpr std::string_view kRssShmemPrefix = "RssShmem:\t";
 
+static constexpr std::string_view kPssPrefix = "Pss:";
+static constexpr std::string_view kPssAnonPrefix = "Pss_Anon:";
+static constexpr std::string_view kPssFilePrefix = "Pss_File:";
+static constexpr std::string_view kPssShmemPrefix = "Pss_Shmem:";
+static constexpr std::string_view kSwapPssPrefix = "SwapPss:";
+static constexpr std::string_view kAnonHugePagePrefix = "AnonHugePages:";
+
+static constexpr std::string_view kMemPattern = "%lu kB";
+
 static constexpr std::string_view kDeleted = " (deleted)";
 
 static constexpr std::string_view kKernelName = "kernel";
@@ -304,6 +313,10 @@ std::string ProcPidInfo::getRssShmem() const {
   return fmt::format(kMemStatFormat, getRssShmemBytes() / 1024ULL);
 }
 
+std::string ProcPidInfo::getAnonHugePage() const {
+  return fmt::format(kMemStatFormat, getAnonHugePageBytes() / 1024ULL);
+}
+
 uint64_t ProcPidInfo::getVmSizeBytes() const {
   return vmsize_;
 }
@@ -346,6 +359,10 @@ uint64_t ProcPidInfo::getPssShmemBytes() const {
 
 uint64_t ProcPidInfo::getSwapPssBytes() const {
   return swappss_;
+}
+
+uint64_t ProcPidInfo::getAnonHugePageBytes() const {
+  return anonhugepage_;
 }
 
 namespace {
@@ -518,6 +535,10 @@ bool ProcPidInfo::updateStats() {
 
 bool ProcPidInfo::updateInfo() {
   return validInfo_ = readProcInfo();
+}
+
+bool ProcPidInfo::updatePssStats() {
+  return readProcSmapsRollup();
 }
 
 // Returns vector of tids of active threads of the process
@@ -1139,6 +1160,43 @@ bool ProcPidInfo::readProcInfo() {
     }
   }
   return cbs.empty() && nsCbs.size() <= nsCbsSize;
+}
+
+bool ProcPidInfo::readProcSmapsRollup() {
+  auto memField = [](uint64_t& target, uint64_t value) {
+    target = 1024ULL * value;
+  };
+
+  using StatusFieldCallback = std::function<void(uint64_t)>;
+  std::vector<std::pair<std::string, StatusFieldCallback>> cbs = {
+      {fmt::format("{} {}", kPssPrefix, kMemPattern),
+       [&](uint64_t value) { return memField(pss_, value); }},
+      {fmt::format("{} {}", kPssAnonPrefix, kMemPattern),
+       [&](uint64_t value) { return memField(pssanon_, value); }},
+      {fmt::format("{} {}", kPssFilePrefix, kMemPattern),
+       [&](uint64_t value) { return memField(pssfile_, value); }},
+      {fmt::format("{} {}", kPssShmemPrefix, kMemPattern),
+       [&](uint64_t value) { return memField(pssshmem_, value); }},
+      {fmt::format("{} {}", kSwapPssPrefix, kMemPattern),
+       [&](uint64_t value) { return memField(swappss_, value); }},
+      {fmt::format("{} {}", kAnonHugePagePrefix, kMemPattern),
+       [&](uint64_t value) { return memField(anonhugepage_, value); }},
+  };
+
+  auto path = getProcfsPath("smaps_rollup");
+  std::fstream fs(path, std::ios_base::in);
+  std::string line;
+  while (std::getline(fs, line)) {
+    for (auto it = cbs.begin(); it != cbs.end(); it++) {
+      uint64_t target = 0;
+      if (std::sscanf(line.c_str(), it->first.c_str(), &target) == 1) {
+        it->second(target);
+        cbs.erase(it);
+        break;
+      }
+    }
+  }
+  return cbs.empty();
 }
 
 static std::string resolveLink(const std::string& link) {
