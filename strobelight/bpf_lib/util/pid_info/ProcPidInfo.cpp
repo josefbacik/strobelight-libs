@@ -70,12 +70,20 @@ size_t readFile(const std::string& filename, std::string& output) {
   return 0;
 }
 
-std::string_view nextToken(
+bool nextToken(
     const std::string_view& sv,
     const std::string_view& delim,
-    size_t startPos) {
+    size_t startPos,
+    std::string_view& result) {
+  if (sv.size() <= startPos) {
+    return false;
+  }
   size_t end = sv.find(delim, startPos);
-  return sv.substr(startPos, end - startPos);
+  if (sv.npos == end) {
+    end = sv.size();
+  }
+  result = sv.substr(startPos, end - startPos);
+  return true;
 }
 
 } // namespace
@@ -503,6 +511,26 @@ std::optional<std::string> ProcPidInfo::getChrootRelativeExe() const {
 
 fs::path ProcPidInfo::getProcfsCwd() const {
   return getProcfsPath("cwd");
+}
+
+std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
+  return cmdLine_.get([&](auto& val) {
+    if (!isKernelProcess()) {
+      auto fn = getProcfsPath("cmdline");
+      std::string cmdline;
+      if (!readProcfsFileToString(fn, &cmdline)) {
+        return;
+      }
+      val = std::vector<std::string>();
+      size_t start = 0;
+      std::string_view delim = std::string_view("\0", 1);
+      std::string_view token;
+      while (nextToken(cmdline, delim, start, token)) {
+        val.value().emplace_back(token.data(), token.size());
+        start += token.size() + 1;
+      }
+    }
+  });
 }
 
 std::optional<std::string> ProcPidInfo::getPidNamespace() const {
@@ -937,7 +965,8 @@ bool ProcPidInfo::readProcStat() {
   static constexpr std::string_view delim{" "};
   auto fields = std::string_view(raw).substr(commEnd + 2);
   while (start < fields.size()) {
-    std::string_view value = nextToken(fields, delim, start);
+    std::string_view value;
+    nextToken(fields, delim, start, value);
     start += value.size() + 1;
 
     // skip blanks.
@@ -1023,7 +1052,8 @@ bool ProcPidInfo::readProcInfo() {
 
     auto fields = std::string_view(line);
     while (start < fields.size()) {
-      std::string_view field = nextToken(fields, delim, start);
+      std::string_view field;
+      nextToken(fields, delim, start, field);
       start += field.size() + 1;
 
       // skip blanks.

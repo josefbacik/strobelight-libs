@@ -166,6 +166,7 @@ class ProcPidInfo {
   std::optional<std::string> getChrootPath() const;
   std::optional<std::string> getChrootRelativeExe() const;
   std::filesystem::path getProcfsCwd() const;
+  std::optional<std::vector<std::string>> getCmdLine() const;
   std::optional<std::string> getPidNamespace() const;
 
   /**
@@ -237,7 +238,7 @@ class ProcPidInfo {
   static std::filesystem::path getProcfsPathForPid(
       pid_t pid,
       const std::string& option,
-      const std::filesystem::path& rootDir);
+      const std::filesystem::path& rootDir = "");
 
   // Returns vector of pids of all running processes
   // The rootDir parameter is so that in Unit Tests we can make this static
