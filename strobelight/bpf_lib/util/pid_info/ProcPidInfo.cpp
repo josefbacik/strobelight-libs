@@ -524,6 +524,31 @@ std::optional<std::string> ProcPidInfo::getPidNamespace() const {
   });
 }
 
+std::optional<uint64_t> ProcPidInfo::getPidNamespaceId() const {
+  // Format is:
+  // pid:[12345]
+  auto pidNamespace = ProcPidInfo::getPidNamespace();
+  if (!pidNamespace.has_value()) {
+    return std::nullopt;
+  }
+  auto start = pidNamespace.value().find_first_of('[') + 1;
+  auto end = pidNamespace.value().find_first_of(']');
+  if (start == std::string::npos || end == std::string::npos) {
+    return std::nullopt;
+  }
+
+  uint64_t target;
+  if (std::from_chars(
+          pidNamespace.value().data() + start,
+          pidNamespace.value().data() + end,
+          target)
+          .ec == std::errc{}) {
+    return target;
+  } else {
+    return std::nullopt;
+  }
+}
+
 std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
     const {
   return cgroups_.get([&](auto& val) {

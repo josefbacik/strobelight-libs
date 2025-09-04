@@ -169,6 +169,7 @@ class ProcPidInfo {
   std::optional<std::vector<std::string>> getCmdLine() const;
   std::shared_ptr<std::map<std::string, std::string>> getCgroups() const;
   std::optional<std::string> getPidNamespace() const;
+  std::optional<uint64_t> getPidNamespaceId() const;
 
   /**
    * Common Process environment attributes
