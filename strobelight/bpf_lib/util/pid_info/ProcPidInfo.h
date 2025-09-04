@@ -170,6 +170,8 @@ class ProcPidInfo {
   std::shared_ptr<std::map<std::string, std::string>> getCgroups() const;
   std::optional<std::string> getPidNamespace() const;
   std::optional<uint64_t> getPidNamespaceId() const;
+  std::optional<std::string> getMountNamespace() const;
+  std::optional<uint64_t> getMountNamespaceId() const;
 
   /**
    * Common Process environment attributes
@@ -345,6 +347,7 @@ class ProcPidInfo {
   Lazy<std::shared_ptr<std::map<std::string, std::string>>> cgroups_;
   Lazy<std::optional<std::vector<std::string>>> cmdLine_;
   Lazy<std::optional<std::string>> pidNamespace_;
+  Lazy<std::optional<std::string>> mountNamespace_;
   Lazy<ServiceInfo> serviceInfo_;
 
   // Stats of the Process

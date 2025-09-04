@@ -513,6 +513,26 @@ std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
   });
 }
 
+namespace {
+std::optional<uint64_t> parseNamespaceId(const std::string& ns) {
+  // Format is:
+  // pid:[12345]
+  auto start = ns.find_first_of('[') + 1;
+  auto end = ns.find_first_of(']');
+  if (start == std::string::npos || end == std::string::npos) {
+    return std::nullopt;
+  }
+
+  uint64_t target;
+  if (std::from_chars(ns.data() + start, ns.data() + end, target).ec ==
+      std::errc{}) {
+    return target;
+  } else {
+    return std::nullopt;
+  }
+}
+} // namespace
+
 std::optional<std::string> ProcPidInfo::getPidNamespace() const {
   return pidNamespace_.get([&](auto& val) {
     auto path = getProcfsPath("ns/pid");
@@ -531,22 +551,26 @@ std::optional<uint64_t> ProcPidInfo::getPidNamespaceId() const {
   if (!pidNamespace.has_value()) {
     return std::nullopt;
   }
-  auto start = pidNamespace.value().find_first_of('[') + 1;
-  auto end = pidNamespace.value().find_first_of(']');
-  if (start == std::string::npos || end == std::string::npos) {
-    return std::nullopt;
-  }
 
-  uint64_t target;
-  if (std::from_chars(
-          pidNamespace.value().data() + start,
-          pidNamespace.value().data() + end,
-          target)
-          .ec == std::errc{}) {
-    return target;
-  } else {
+  return parseNamespaceId(pidNamespace.value());
+}
+
+std::optional<std::string> ProcPidInfo::getMountNamespace() const {
+  return mountNamespace_.get([&](auto& val) {
+    std::string const link = getProcfsPath("ns/mnt").string();
+    std::string file;
+    if (readProcfsSymlink(link, &file)) {
+      val = std::move(file);
+    }
+  });
+}
+
+std::optional<uint64_t> ProcPidInfo::getMountNamespaceId() const {
+  auto mountNamespace = getMountNamespace();
+  if (!mountNamespace.has_value()) {
     return std::nullopt;
   }
+  return parseNamespaceId(mountNamespace.value());
 }
 
 std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
