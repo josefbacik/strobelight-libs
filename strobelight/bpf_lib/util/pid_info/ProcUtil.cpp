@@ -20,6 +20,58 @@ using std::vector;
 
 using namespace fmt::literals;
 
+bool nextToken(
+    const std::string_view& sv,
+    const std::string_view& delim,
+    size_t startPos,
+    std::string_view& result) {
+  if (sv.size() <= startPos) {
+    return false;
+  }
+  size_t end = sv.find(delim, startPos);
+  if (sv.npos == end) {
+    end = sv.size();
+  }
+  result = sv.substr(startPos, end - startPos);
+  return true;
+}
+
+bool tokenize(
+    const std::string& source,
+    const std::string& delim,
+    std::vector<std::string>& destination) {
+  size_t start = 0;
+  std::string_view token;
+  while (nextToken(source, delim, start, token)) {
+    destination.emplace_back(token.data(), token.size());
+    start += token.size() + 1;
+  }
+  return destination.size() > 0;
+}
+
+bool getCgroupNames(
+    const string& cg_line,
+    vector<string>& subsystems,
+    vector<string>& cg_names) {
+  std::vector<std::string> cgroupDetails;
+  tokenize(cg_line, ":", cgroupDetails);
+
+  if (cgroupDetails.size() < 3) {
+    return false;
+  }
+
+  std::string& subsystemStr = cgroupDetails[1];
+  std::string& mountpoint = cgroupDetails[2];
+
+  tokenize(subsystemStr, ",", subsystems);
+
+  for (const auto& subs : subsystems) {
+    (void)subs;
+    cg_names.push_back(mountpoint);
+  }
+  return true;
+}
+
 bool populateCgMap(
     map<string, string>& cg_map,
     vector<string>& subsystems,

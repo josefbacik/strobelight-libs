@@ -15,6 +15,22 @@ struct BuildInfo;
 struct BinaryInfo;
 enum class ArchiveType;
 
+bool nextToken(
+    const std::string_view& sv,
+    const std::string_view& delim,
+    size_t startPos,
+    std::string_view& result);
+
+bool tokenize(
+    const std::string& source,
+    const std::string& delimiter,
+    std::vector<std::string>& destination);
+
+bool getCgroupNames(
+    const std::string& cg_line,
+    std::vector<std::string>& subsystems,
+    std::vector<std::string>& cg_names);
+
 bool populateCgMap(
     std::map<std::string, std::string>& cg_map,
     std::vector<std::string>& subsystems,

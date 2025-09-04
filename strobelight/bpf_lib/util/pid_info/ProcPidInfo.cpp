@@ -70,22 +70,6 @@ size_t readFile(const std::string& filename, std::string& output) {
   return 0;
 }
 
-bool nextToken(
-    const std::string_view& sv,
-    const std::string_view& delim,
-    size_t startPos,
-    std::string_view& result) {
-  if (sv.size() <= startPos) {
-    return false;
-  }
-  size_t end = sv.find(delim, startPos);
-  if (sv.npos == end) {
-    end = sv.size();
-  }
-  result = sv.substr(startPos, end - startPos);
-  return true;
-}
-
 } // namespace
 
 namespace facebook::pid_info {
@@ -514,6 +498,8 @@ fs::path ProcPidInfo::getProcfsCwd() const {
 }
 
 std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
+  // need to construct the string with length so it is not interpreted as empty
+  static std::string null_delim("\0", 1);
   return cmdLine_.get([&](auto& val) {
     if (!isKernelProcess()) {
       auto fn = getProcfsPath("cmdline");
@@ -522,13 +508,7 @@ std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
         return;
       }
       val = std::vector<std::string>();
-      size_t start = 0;
-      std::string_view delim = std::string_view("\0", 1);
-      std::string_view token;
-      while (nextToken(cmdline, delim, start, token)) {
-        val.value().emplace_back(token.data(), token.size());
-        start += token.size() + 1;
-      }
+      tokenize(cmdline, null_delim, val.value());
     }
   });
 }
@@ -541,6 +521,37 @@ std::optional<std::string> ProcPidInfo::getPidNamespace() const {
       return;
     }
     val = pidNamespace;
+  });
+}
+
+std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
+    const {
+  return cgroups_.get([&](auto& val) {
+    if (isKernelProcess()) {
+      return;
+    }
+
+    auto path = getProcfsPath("cgroup");
+    std::string raw;
+
+    if (!readProcfsFileToString(path, &raw)) {
+      return;
+    }
+
+    std::vector<std::string> cgLines;
+    tokenize(raw, "\n", cgLines);
+
+    val = std::make_unique<std::map<std::string, std::string>>();
+    for (auto& line : cgLines) {
+      std::vector<std::string> subsystems;
+      std::vector<std::string> cgNames;
+
+      if (!getCgroupNames(line, subsystems, cgNames)) {
+        continue;
+      }
+
+      populateCgMap(*val, subsystems, cgNames);
+    }
   });
 }
 

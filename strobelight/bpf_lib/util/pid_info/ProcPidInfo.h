@@ -167,6 +167,7 @@ class ProcPidInfo {
   std::optional<std::string> getChrootRelativeExe() const;
   std::filesystem::path getProcfsCwd() const;
   std::optional<std::vector<std::string>> getCmdLine() const;
+  std::shared_ptr<std::map<std::string, std::string>> getCgroups() const;
   std::optional<std::string> getPidNamespace() const;
 
   /**
@@ -340,6 +341,7 @@ class ProcPidInfo {
   Lazy<std::optional<std::string>> chronosJobOwner_;
   Lazy<std::optional<std::string>> relativeExe_;
   Lazy<Environment> environment_;
+  Lazy<std::shared_ptr<std::map<std::string, std::string>>> cgroups_;
   Lazy<std::optional<std::vector<std::string>>> cmdLine_;
   Lazy<std::optional<std::string>> pidNamespace_;
   Lazy<ServiceInfo> serviceInfo_;
