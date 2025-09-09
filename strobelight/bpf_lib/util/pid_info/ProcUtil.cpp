@@ -49,6 +49,26 @@ bool tokenize(
   return destination.size() > 0;
 }
 
+bool tokenizeKv(
+    const std::string_view& source,
+    const std::string_view& pairDelimiter,
+    const std::string_view& kvDelimiter,
+    std::unordered_map<std::string_view, std::string_view>& destination) {
+  std::vector<std::string_view> pairs;
+  if (!tokenize(source, pairDelimiter, pairs)) {
+    return false;
+  }
+
+  std::vector<std::string_view> kv;
+  for (auto kvPair : pairs) {
+    if (tokenize(kvPair, kvDelimiter, kv) && kv.size() == 2) {
+      destination[kv[0]] = kv[1];
+    }
+    kv.clear();
+  }
+  return destination.size() > 0;
+}
+
 bool getCgroupNames(
     const std::string_view& cg_line,
     vector<std::string_view>& subsystems,

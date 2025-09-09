@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace facebook::pid_info {
@@ -26,6 +27,12 @@ bool tokenize(
     const std::string_view& source,
     const std::string_view& delimiter,
     std::vector<std::string_view>& destination);
+
+bool tokenizeKv(
+    const std::string_view& source,
+    const std::string_view& pairDelimiter,
+    const std::string_view& kvDelimiter,
+    std::unordered_map<std::string_view, std::string_view>& destination);
 
 bool getCgroupNames(
     const std::string_view& cg_line,

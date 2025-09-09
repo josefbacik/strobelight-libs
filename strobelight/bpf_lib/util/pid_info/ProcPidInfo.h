@@ -173,6 +173,11 @@ class ProcPidInfo {
   std::optional<std::string> getMountNamespace() const;
   std::optional<uint64_t> getMountNamespaceId() const;
 
+  using EnvMap = std::unordered_map<std::string_view, std::string_view>;
+  const EnvMap& getEnvVars() const;
+  std::optional<std::string> getEnvVar(std::string_view key) const;
+  const std::string& getEnvRaw() const;
+
   /**
    * Common Process environment attributes
    */
@@ -274,11 +279,16 @@ class ProcPidInfo {
   void readPidNamespace();
 
   // Read and parse Process constant attributes when requested
-  using EnvMap = std::unordered_map<std::string_view, std::string_view>;
   struct Environment {
     std::string raw;
     EnvMap vars;
   };
+
+  static bool readEnvironmentForPid(
+      pid_t pid,
+      const std::filesystem::path& rootDir,
+      Environment& environment);
+  const Environment& getEnvironment() const;
 
   bool getTargetNamespace(std::string& target_namespace) const;
 

@@ -24,6 +24,8 @@
 #include "strobelight/bpf_lib/util/pid_info/ProcUtil.h"
 
 namespace {
+static const std::string null_delim("\0", 1);
+
 /* Primarily used to read files from /proc filesystem.
  * These typically do not behave like normal files. For example,
  * typical methodology for getting the size of the file will report
@@ -41,8 +43,7 @@ size_t readFile(const std::string& filename, std::string& output) {
   file.seekg(0, std::ios::end);
 
   int64_t fileSize = 0;
-
-  if (file.fail()) {
+  if (file.fail() || file.tellg() == 0) {
     // /proc files report size 0. set a min size of 2048
     // which should be able to accommodate most /proc/<pid>/status
     fileSize = 2048;
@@ -610,6 +611,32 @@ std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
   });
 }
 
+const ProcPidInfo::Environment& ProcPidInfo::getEnvironment() const {
+  return environment_.get([&](auto& var) {
+    if (!isKernelProcess()) {
+      readEnvironmentForPid(pid_, rootDir_, var);
+    }
+  });
+}
+
+const ProcPidInfo::EnvMap& ProcPidInfo::getEnvVars() const {
+  return getEnvironment().vars;
+}
+
+const std::string& ProcPidInfo::getEnvRaw() const {
+  return getEnvironment().raw;
+}
+
+std::optional<std::string> ProcPidInfo::getEnvVar(std::string_view key) const {
+  const auto& envVars = getEnvVars();
+
+  auto it = envVars.find(key);
+  if (it != envVars.end()) {
+    return std::string(it->second);
+  }
+  return std::nullopt;
+}
+
 fs::path ProcPidInfo::getProcfsPathForPid(
     pid_t pid,
     const std::string& option,
@@ -633,6 +660,22 @@ bool ProcPidInfo::updateInfo() {
 
 bool ProcPidInfo::updatePssStats() {
   return readProcSmapsRollup();
+}
+
+bool ProcPidInfo::readEnvironmentForPid(
+    pid_t pid,
+    const fs::path& rootDir,
+    Environment& environment) {
+  // environ can be root read only
+  auto path = getProcfsPathForPid(pid, "environ", rootDir);
+
+  if (readFile(path.c_str(), environment.raw) == 0) {
+    return false;
+  }
+  environment.raw.shrink_to_fit();
+
+  tokenizeKv(environment.raw, null_delim, "=", environment.vars);
+  return true;
 }
 
 // Returns vector of tids of active threads of the process
