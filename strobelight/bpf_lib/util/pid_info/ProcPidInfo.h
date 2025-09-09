@@ -181,6 +181,7 @@ class ProcPidInfo {
   /**
    * Common Process environment attributes
    */
+  std::optional<std::string> getMallocConf() const;
 
   // Refresh Process stats
   bool updateStats();

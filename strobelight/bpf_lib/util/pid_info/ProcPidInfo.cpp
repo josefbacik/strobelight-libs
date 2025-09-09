@@ -637,6 +637,10 @@ std::optional<std::string> ProcPidInfo::getEnvVar(std::string_view key) const {
   return std::nullopt;
 }
 
+std::optional<std::string> ProcPidInfo::getMallocConf() const {
+  return getEnvVar("MALLOC_CONF");
+}
+
 fs::path ProcPidInfo::getProcfsPathForPid(
     pid_t pid,
     const std::string& option,
