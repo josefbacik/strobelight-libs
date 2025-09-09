@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace facebook::pid_info {
@@ -22,19 +23,19 @@ bool nextToken(
     std::string_view& result);
 
 bool tokenize(
-    const std::string& source,
-    const std::string& delimiter,
-    std::vector<std::string>& destination);
+    const std::string_view& source,
+    const std::string_view& delimiter,
+    std::vector<std::string_view>& destination);
 
 bool getCgroupNames(
-    const std::string& cg_line,
-    std::vector<std::string>& subsystems,
-    std::vector<std::string>& cg_names);
+    const std::string_view& cg_line,
+    std::vector<std::string_view>& subsystems,
+    std::vector<std::string_view>& cg_names);
 
 bool populateCgMap(
     std::map<std::string, std::string>& cg_map,
-    std::vector<std::string>& subsystems,
-    std::vector<std::string>& cg_names);
+    std::vector<std::string_view>& subsystems,
+    std::vector<std::string_view>& cg_names);
 
 /*
  * forceJoinNormalise joins \p lhs and \p rhs but also:

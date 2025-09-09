@@ -499,7 +499,7 @@ fs::path ProcPidInfo::getProcfsCwd() const {
 
 std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
   // need to construct the string with length so it is not interpreted as empty
-  static std::string null_delim("\0", 1);
+  static constexpr std::string_view null_delim("\0", 1);
   return cmdLine_.get([&](auto& val) {
     if (!isKernelProcess()) {
       auto fn = getProcfsPath("cmdline");
@@ -507,8 +507,14 @@ std::optional<std::vector<std::string>> ProcPidInfo::getCmdLine() const {
       if (!readProcfsFileToString(fn, &cmdline)) {
         return;
       }
-      val = std::vector<std::string>();
-      tokenize(cmdline, null_delim, val.value());
+      std::vector<std::string_view> tokens{};
+      tokenize(cmdline, null_delim, tokens);
+
+      // val (i.e. cmdLine_) is a vector of strings, but tokenize populates a
+      // vector of string_views. As such, we need to copy the string_view vector
+      // out to a vector of strings. We do this to maintain API compatibility
+      // for getCmdLine
+      val = std::vector<std::string>(tokens.begin(), tokens.end());
     }
   });
 }
@@ -587,13 +593,13 @@ std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
       return;
     }
 
-    std::vector<std::string> cgLines;
+    std::vector<std::string_view> cgLines;
     tokenize(raw, "\n", cgLines);
 
     val = std::make_unique<std::map<std::string, std::string>>();
     for (auto& line : cgLines) {
-      std::vector<std::string> subsystems;
-      std::vector<std::string> cgNames;
+      std::vector<std::string_view> subsystems{};
+      std::vector<std::string_view> cgNames{};
 
       if (!getCgroupNames(line, subsystems, cgNames)) {
         continue;

@@ -37,31 +37,31 @@ bool nextToken(
 }
 
 bool tokenize(
-    const std::string& source,
-    const std::string& delim,
-    std::vector<std::string>& destination) {
+    const std::string_view& source,
+    const std::string_view& delim,
+    std::vector<std::string_view>& destination) {
   size_t start = 0;
   std::string_view token;
   while (nextToken(source, delim, start, token)) {
-    destination.emplace_back(token.data(), token.size());
+    destination.emplace_back(token);
     start += token.size() + 1;
   }
   return destination.size() > 0;
 }
 
 bool getCgroupNames(
-    const string& cg_line,
-    vector<string>& subsystems,
-    vector<string>& cg_names) {
-  std::vector<std::string> cgroupDetails;
+    const std::string_view& cg_line,
+    vector<std::string_view>& subsystems,
+    vector<std::string_view>& cg_names) {
+  std::vector<std::string_view> cgroupDetails;
   tokenize(cg_line, ":", cgroupDetails);
 
   if (cgroupDetails.size() < 3) {
     return false;
   }
 
-  std::string& subsystemStr = cgroupDetails[1];
-  std::string& mountpoint = cgroupDetails[2];
+  std::string_view& subsystemStr = cgroupDetails[1];
+  std::string_view& mountpoint = cgroupDetails[2];
 
   tokenize(subsystemStr, ",", subsystems);
 
@@ -74,8 +74,8 @@ bool getCgroupNames(
 
 bool populateCgMap(
     map<string, string>& cg_map,
-    vector<string>& subsystems,
-    vector<string>& cg_names) {
+    vector<std::string_view>& subsystems,
+    vector<std::string_view>& cg_names) {
   // We can't guess this alignment.
   if (subsystems.size() != cg_names.size()) {
     return false;
@@ -97,7 +97,7 @@ bool populateCgMap(
         break;
       }
     }
-    colName = subsystems[i] + "_cgroup";
+    colName = fmt::format("{}_cgroup", subsystems[i]);
 
     // We only care about non-whitelisted groups if they are non-root
     if (!whitelisted && cg_names[i] == "/") {
