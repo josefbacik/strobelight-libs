@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "strobelight/bpf_lib/util/BpfLibLogger.h"
+#include "strobelight/bpf_lib/util/pid_info/MemoryMappingIterator.h"
 #include "strobelight/bpf_lib/util/pid_info/ProcUtil.h"
 
 namespace {
@@ -77,8 +78,6 @@ namespace facebook::pid_info {
 
 namespace fs = std::filesystem;
 
-static constexpr std::string_view kAnonHugePage = "/anon_hugepage";
-
 // /proc/PID/status fields
 static constexpr std::string_view kNamePrefix = "Name:\t";
 static constexpr std::string_view kStatePrefix = "State:\t";
@@ -106,8 +105,6 @@ static constexpr std::string_view kSwapPssPrefix = "SwapPss:";
 static constexpr std::string_view kAnonHugePagePrefix = "AnonHugePages:";
 
 static constexpr std::string_view kMemPattern = "%lu kB";
-
-static constexpr std::string_view kDeleted = " (deleted)";
 
 static constexpr std::string_view kKernelName = "kernel";
 static constexpr std::string_view kKernelExe = "vmlinux";
@@ -460,8 +457,15 @@ time_t ProcPidInfo::getStartTime() const {
   return duration_cast<seconds>(startTime.time_since_epoch()).count();
 }
 
+fs::path ProcPidInfo::getProcfsRootForPid(
+    pid_t pid,
+    const fs::path& path,
+    const std::filesystem::path& rootDir) {
+  return forceJoinNormalise(getProcfsPathForPid(pid, "root", rootDir), path);
+}
+
 fs::path ProcPidInfo::getProcfsRoot(const fs::path& path) const {
-  return forceJoinNormalise(getProcfsPath("root"), path);
+  return getProcfsRootForPid(pid_, path, rootDir_);
 }
 
 std::optional<std::string> ProcPidInfo::getChrootPath() const {
@@ -738,241 +742,69 @@ bool ProcPidInfo::readMemoryMapLine(
   return true;
 }
 
-bool ProcPidInfo::iterateAllMemoryMappings(
-    MemoryMappingCallback callback) const {
-  auto filename = getProcfsPath("maps");
-  std::fstream fs(filename, std::ios_base::in);
-  if (!fs.is_open()) {
-    strobelight_lib_print(
-        STROBELIGHT_LIB_DEBUG,
-        fmt::format(
-            "[{}] Unable to open procfs mapfile: '{}'",
-            pid_,
-            filename.filename().string())
-            .c_str());
-    return false;
-  }
-
-  MemoryMapping module;
-  std::string line;
-  while (std::getline(fs, line)) {
-    if (!ProcPidInfo::readMemoryMapLine(line, module)) {
-      strobelight_lib_print(
-          STROBELIGHT_LIB_DEBUG,
-          fmt::format(
-              "[{}] Error reading line '{}' in {} procfs mapfile",
-              pid_,
-              line,
-              filename.filename().string())
-              .c_str());
-      return false;
-    }
-
+bool ProcPidInfo::iterateAllMemoryMappingsForPid(
+    pid_t pid,
+    const MemoryMappingCallback& callback,
+    const std::string& rootDir) {
+  for (auto itr = MemoryMappingIterator(pid, rootDir),
+            end = MemoryMappingIterator();
+       itr != end;
+       ++itr) {
     try {
-      if (callback(module) == IterControl::BREAK) {
+      if (callback(*itr) == IterControl::BREAK) {
         break;
       }
     } catch (const std::exception& e) {
       strobelight_lib_print(
           STROBELIGHT_LIB_DEBUG,
           fmt::format(
-              "[{}] Exception executing callback on line: '{}' in {} procfs mapfile. Message: {}.",
-              pid_,
-              line,
-              filename.filename().string(),
+              "Exception during callback for mapping '{}' in process {}: {}.",
+              itr->name,
+              pid,
               e.what())
               .c_str());
       return false;
     }
   }
-
   return true;
 }
 
-// Resolving from proc maps is trickier than just resolving the main exe
-// directly, due to non-fixed load addresses. The basic algorithm used is as
-// follows:
-//   For each buildId/binary mapping in /proc/<pid>/maps get the entry
-//   with the lowest startAddr (ignoring shared and non-readable mappings);
-//   this should happen automatically because they are ordered this way.
-//
-//   For the buildId iterate over all the ELF program headers and get the
-//   default load address (p_vaddr) and offset (p_offset) for the lowest
-//   loadable (LOAD) segment. They should be in this order already.
-//
-//   In order to compute the 'slide'/base-load-address of a shared or
-//   relocatable binary we will take the start address of the lowest
-//   memory mapping and subtract the fileOffset of the same memory mapping
-//   and then substract the difference between the p_vaddr and p_offset above:
-//   slide = (mmStartAddr - mmFileOffset) - (lowest p_vaddr - lowest p_offset)
-//
-//   Most of the time mmFileOffset and lowest p_offset are the same.
-//
-//   Why?
-//   From the ELF spec: https://refspecs.linuxfoundation.org/elf/elf.pdf
-//   "Though the system chooses virtual addresses for individual processes, it
-//   maintains the segments’ relative positions. Because position-independent
-//   code uses relative addressing between segments, the difference between
-//   virtual addresses in memory must match the difference between virtual
-//   addresses in the file. The difference between the virtual address of any
-//   segment in memory and the corresponding virtual address in the file is thus
-//   a single constant value for any one executable or shared object in a given
-//   process."
-//
-//   This essentialy means that the base-load-address for each binary (within
-//   the context of a process) is the same for all of its memory mappings in
-//   order to maintain relative addressing. So all we have to do is find the
-//   lowest mapping for each binary, then subtract the fileOffset to get the
-//   absolute address that corresponds to file offset zero, then subtract the
-//   difference between the default load address (p_vaddr) and the fileOffset
-//   (p_offset) from the lowest LOAD segment to get the amount to substract
-//   from absolute virtual addresses to the virtual addresses in the
-//   ELF file.
-//
-//   Note: Matching a memory mapping to the LOAD segment(s) in it is hard!
-//   You can have instances where multiple memory mappings contain a
-//   single LOAD segment (e.g. huge_pages):
-//   3fc00000-41600000 r-xp 3d000000 00:1d 257 admarket.adfinder/adfinder
-//   41600000-46a95000 r-xp 3ea00000 00:1d 257 admarket.adfinder/adfinder
-//   ELF Program Header:
-//   Type           Offset             VirtAddr           PhysAddr
-//               FileSiz            MemSiz              Flags  Align
-//   LOAD           0x000000003d000000 0x000000003fc00000 0x000000003fc00000
-//               0x0000000006e94a14 0x0000000006e94a14  R E    0x200000
-//
-//   There can also be one mapping for several LOAD segments e.g.
-//   7f621c2f6000-7f621c51b000 r-xp 00000000 00:1b 129076798 libstdc++.so.6.0.29
-//   ELF Program Header:
-//   Type           Offset             VirtAddr           PhysAddr
-//               FileSiz            MemSiz              Flags  Align
-//   LOAD           0x0000000000000000 0x0000000000000000 0x0000000000000000
-//               0x00000000000985f8 0x00000000000985f8  R      0x1000
-//   LOAD           0x0000000000099000 0x0000000000099000 0x0000000000099000
-//                0x0000000000129759 0x0000000000129759  R E    0x1000
-//   LOAD           0x00000000001c3000 0x00000000001c3000 0x00000000001c3000
-//                0x000000000006125d 0x000000000006125d  R      0x1000
-//
-//   There can be memory mappings with NO load segments e.g.
-//   7f621cd6d000-7f621cd6e000 ---p 002e2000 00:1b 129103448 libpython3.8.so.1.0
-//
-//   This is why we're just taking the first non-shared and readable mapping
-//   and matching it against the first LOAD segment instead of attempting to
-//   find the matching LOAD segment for each memory mapping.
-//
-//   Note2: Memory Mappings backed by a file marked as (deleted) still resolve
-//   to the correct, original file when opening this file via the map_files path
-//   (e.g. proc/<pid>/map_files/xxx-yyy); you will be reading the inode that
-//   was actually mapped into the process.
+bool ProcPidInfo::iterateAllMemoryMappingsForPid(
+    pid_t pid,
+    const MemoryMappingWithBaseLoadAddressCallback& callback,
+    const std::string& rootDir) {
+  for (auto itr = MemoryMappingIterator(pid, rootDir),
+            end = MemoryMappingIterator();
+       itr != end;
+       ++itr) {
+    try {
+      if (callback(*itr, itr.getBaseLoadAddress(), itr.getElfFile()) ==
+          IterControl::BREAK) {
+        break;
+      }
+    } catch (const std::exception& e) {
+      strobelight_lib_print(
+          STROBELIGHT_LIB_DEBUG,
+          fmt::format(
+              "Exception during callback for mapping '{}' in process {}: {}.",
+              itr->name,
+              pid,
+              e.what())
+              .c_str());
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ProcPidInfo::iterateAllMemoryMappings(
-    MemoryMappingWithBaseLoadAddressCallback callback) const {
-  std::string mappingName;
-  std::optional<uintptr_t> elfBaseLoadAddress;
-  std::shared_ptr<strobelight::ElfFile> elf;
-  std::map<std::string, std::optional<uintptr_t>> elfBaseLoadAddressMap;
+    const MemoryMappingCallback& callback) const {
+  return ProcPidInfo::iterateAllMemoryMappingsForPid(pid_, callback, rootDir_);
+}
 
-  return iterateAllMemoryMappings([&](const MemoryMapping& mm) {
-    if (mm.shared || !mm.readable) {
-      return callback(mm, std::nullopt, nullptr);
-    }
-
-    if (mm.name.empty() || mm.name[0] != '/' ||
-        (mm.name.compare(0, kAnonHugePage.size(), kAnonHugePage) == 0)) {
-      return callback(mm, std::nullopt, nullptr);
-    }
-
-    // In the common case the mappings for a file are grouped together
-    // in /proc/<pid>/maps so it is unlikely that we will thrash the ElfFile.
-    //
-    // For ease of use we want to ensure that if it's possible for an ElfFile
-    // to be opened for a mapping then the callback will include it.
-    if (mappingName == mm.name) {
-      return callback(mm, elfBaseLoadAddress, elf);
-    }
-
-    mappingName = mm.name;
-    elfBaseLoadAddress = std::nullopt;
-    elf = std::make_shared<strobelight::ElfFile>();
-
-    // /proc/<pid>/map_files/ paths are preferred for accessing ELF files of
-    // mappings because they work correctly for deleted / modified files as well
-    // as container based process files.
-    //
-    // According to the procfs man page
-    // (https://man7.org/linux/man-pages/man5/procfs.5.html):
-    //
-    // "Capabilities are required to read the contents of the symbolic links in
-    // this directory: before Linux 5.9, the reading process requires
-    // CAP_SYS_ADMIN in the initial user namespace; since Linux 5.9, the reading
-    // process must have either CAP_SYS_ADMIN or CAP_CHECKPOINT_RESTORE in the
-    // user namespace where it resides."
-    //
-    // If the reading process doesn't have CAP_SYS_ADMIN we fall back to reading
-    // from /proc/<pid>/root/<mapping name>.
-    fs::path file;
-    if (haveEffectiveSysAdminCapability()) {
-      file = getProcfsPath("map_files") /
-          fmt::format("{:x}-{:x}", mm.startAddr, mm.endAddr);
-    } else {
-      if (mm.name.find(kDeleted) != std::string::npos) {
-        elf = nullptr;
-        return callback(mm, std::nullopt, elf);
-      }
-      file = getProcfsRoot(mm.name);
-    }
-
-    auto elfFileRes = elf->open(file.c_str());
-    if (!elfFileRes) {
-      elf = nullptr;
-      return callback(mm, elfBaseLoadAddress, elf);
-    }
-
-    if (elf->eType() == ET_EXEC) {
-      // If this isn't relocatable e.g. not ET_REL or ET_DYN
-      // then it should always be loaded at the default load address
-      // even if there is some alignment padding in the memory mapping
-      // so let's not mess around with address adjustment.
-      elfBaseLoadAddress = 0;
-    } else {
-      // Only need to check the map for relocatable file mappings
-      // that are not contiguous because the base load address
-      // calculation works only for the first mapping entry.
-      auto it = elfBaseLoadAddressMap.find(mm.name);
-      if (it != elfBaseLoadAddressMap.end()) {
-        // The memory mapped file is not contiguous in /proc/pid/maps
-        return callback(mm, it->second, elf);
-      }
-
-      std::optional<GElf_Addr> lowestVaddr = std::nullopt;
-      GElf_Off lowestOffset = 0;
-
-      elf->iterateProgramHeaders([&](const GElf_Phdr& h) {
-        if (h.p_type == PT_LOAD) {
-          lowestVaddr = h.p_vaddr;
-          lowestOffset = h.p_offset;
-          return true;
-        }
-        return false;
-      });
-
-      if (!lowestVaddr) {
-        strobelight_lib_print(
-            STROBELIGHT_LIB_INFO,
-            fmt::format(
-                "Could not find an eligible virtual load address for {} @ {} - {} in process {} [{}]",
-                mm.name,
-                (void*)mm.startAddr,
-                (void*)mm.endAddr,
-                getName(),
-                pid_)
-                .c_str());
-      } else {
-        elfBaseLoadAddress =
-            (mm.startAddr - mm.fileOffset) - (*lowestVaddr - lowestOffset);
-      }
-      elfBaseLoadAddressMap.emplace(mm.name, elfBaseLoadAddress);
-    }
-    return callback(mm, elfBaseLoadAddress, elf);
-  });
+bool ProcPidInfo::iterateAllMemoryMappings(
+    const MemoryMappingWithBaseLoadAddressCallback& callback) const {
+  return ProcPidInfo::iterateAllMemoryMappingsForPid(pid_, callback, rootDir_);
 }
 
 ssize_t ProcPidInfo::readMemory(void* dest, const void* src, size_t len) const {

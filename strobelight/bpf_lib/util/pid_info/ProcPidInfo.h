@@ -204,9 +204,18 @@ class ProcPidInfo {
   //
   // Returns false if there were any errors iterating over the memory
   // mappings or if the callback exited with an exception.
-  bool iterateAllMemoryMappings(MemoryMappingCallback callback) const;
+  bool iterateAllMemoryMappings(const MemoryMappingCallback& callback) const;
   bool iterateAllMemoryMappings(
-      MemoryMappingWithBaseLoadAddressCallback callback) const;
+      const MemoryMappingWithBaseLoadAddressCallback& callback) const;
+
+  static bool iterateAllMemoryMappingsForPid(
+      pid_t pid,
+      const MemoryMappingCallback& callback,
+      const std::string& rootDir = "");
+  static bool iterateAllMemoryMappingsForPid(
+      pid_t pid,
+      const MemoryMappingWithBaseLoadAddressCallback& callback,
+      const std::string& rootDir = "");
 
   // Copy up to `len` bytes starting at address `src` in the process to `dest`
   // (must be at least `len` bytes long).
@@ -241,6 +250,11 @@ class ProcPidInfo {
   // if \p path is relative, returns full path to the file or directory, e.g.
   // "/proc/0/root/tmp/perf-1.dump" for "tmp/perf-1.dump"
   std::filesystem::path getProcfsRoot(const std::filesystem::path& path) const;
+
+  static std::filesystem::path getProcfsRootForPid(
+      pid_t pid,
+      const std::filesystem::path& path,
+      const std::filesystem::path& rootDir = "");
 
   // Get path in procfs relative to the rootDir
   std::filesystem::path getProcfsPath(const std::string& option) const;
