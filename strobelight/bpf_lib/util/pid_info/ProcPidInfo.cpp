@@ -43,21 +43,21 @@ size_t readFile(const std::string& filename, std::string& output) {
 
   file.seekg(0, std::ios::end);
 
-  int64_t fileSize = 0;
+  int64_t chunkSize = 0;
   if (file.fail() || file.tellg() == 0) {
     // /proc files report size 0. set a min size of 2048
     // which should be able to accommodate most /proc/<pid>/status
-    fileSize = 2048;
+    chunkSize = 2048;
     file.clear();
   } else {
-    fileSize = static_cast<int64_t>(file.tellg()) + 1;
+    chunkSize = static_cast<int64_t>(file.tellg()) + 1;
     file.seekg(0);
   }
 
   int64_t readSize = 0;
   for (int idx = 1; idx < 4 && file.good(); ++idx) {
-    output.resize(idx * fileSize);
-    file.read(&output[readSize], fileSize - readSize);
+    output.resize(idx * chunkSize);
+    file.read(&output[readSize], chunkSize);
 
     readSize += file.gcount();
   }
