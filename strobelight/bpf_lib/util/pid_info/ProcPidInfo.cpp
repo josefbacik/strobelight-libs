@@ -546,12 +546,11 @@ std::optional<uint64_t> parseNamespaceId(const std::string& ns) {
 
 std::optional<std::string> ProcPidInfo::getPidNamespace() const {
   return pidNamespace_.get([&](auto& val) {
-    auto path = getProcfsPath("ns/pid");
-    std::string pidNamespace;
-    if (!readProcfsSymlink(path, &pidNamespace)) {
-      return;
+    std::string const link = getProcfsPath("ns/pid").string();
+    std::string file;
+    if (readProcfsSymlink(link, &file)) {
+      val = std::move(file);
     }
-    val = pidNamespace;
   });
 }
 
@@ -595,6 +594,9 @@ std::shared_ptr<std::map<std::string, std::string>> ProcPidInfo::getCgroups()
     std::string raw;
 
     if (!readProcfsFileToString(path, &raw)) {
+      strobelight_lib_print(
+          STROBELIGHT_LIB_DEBUG,
+          fmt::format("Can't read {}", path.string()).c_str());
       return;
     }
 
