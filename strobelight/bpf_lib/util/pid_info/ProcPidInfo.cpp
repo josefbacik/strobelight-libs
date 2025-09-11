@@ -670,25 +670,10 @@ bool ProcPidInfo::updatePssStats() {
   return readProcSmapsRollup();
 }
 
-bool ProcPidInfo::readEnvironmentForPid(
+std::vector<pid_t> ProcPidInfo::getRunningThreadsForPid(
     pid_t pid,
-    const fs::path& rootDir,
-    Environment& environment) {
-  // environ can be root read only
-  auto path = getProcfsPathForPid(pid, "environ", rootDir);
-
-  if (readFile(path.c_str(), environment.raw) == 0) {
-    return false;
-  }
-  environment.raw.shrink_to_fit();
-
-  tokenizeKv(environment.raw, null_delim, "=", environment.vars);
-  return true;
-}
-
-// Returns vector of tids of active threads of the process
-std::vector<pid_t> ProcPidInfo::getRunningThreads() const {
-  auto path = getProcfsPath("task");
+    const std::string& rootDir) {
+  auto path = getProcfsPathForPid(pid, "task", rootDir);
   std::vector<pid_t> result;
   auto success = readPidListFromDirectory(path, result);
   if (!success) {
@@ -698,10 +683,15 @@ std::vector<pid_t> ProcPidInfo::getRunningThreads() const {
         STROBELIGHT_LIB_DEBUG,
         fmt::format(
             "Unable to read /proc/{}/task/. PID probably doesn't exist anymore",
-            pid_)
+            pid)
             .c_str());
   }
   return result;
+}
+
+// Returns vector of tids of active threads of the process
+std::vector<pid_t> ProcPidInfo::getRunningThreads() const {
+  return getRunningThreadsForPid(pid_, rootDir_);
 }
 
 bool ProcPidInfo::readMemoryMapLine(
@@ -807,18 +797,29 @@ bool ProcPidInfo::iterateAllMemoryMappings(
   return ProcPidInfo::iterateAllMemoryMappingsForPid(pid_, callback, rootDir_);
 }
 
-ssize_t ProcPidInfo::readMemory(void* dest, const void* src, size_t len) const {
+ssize_t ProcPidInfo::readMemoryFromPid(
+    pid_t pid,
+    void* dest,
+    const void* src,
+    size_t len) {
   struct iovec local[1];
   struct iovec remote[1];
   local[0].iov_base = dest;
   local[0].iov_len = len;
   remote[0].iov_base = (void*)src;
   remote[0].iov_len = len;
-  return ::process_vm_readv(pid_, local, 1, remote, 1, 0);
+  return ::process_vm_readv(pid, local, 1, remote, 1, 0);
 }
 
-size_t ProcPidInfo::readCString(char* dest, const char* src, size_t maxLen)
-    const {
+ssize_t ProcPidInfo::readMemory(void* dest, const void* src, size_t len) const {
+  return readMemoryFromPid(pid_, dest, src, len);
+}
+
+size_t ProcPidInfo::readCStringFromPid(
+    pid_t pid,
+    char* dest,
+    const char* src,
+    size_t maxLen) {
   if (maxLen < 1) {
     return -EINVAL;
   }
@@ -831,14 +832,14 @@ size_t ProcPidInfo::readCString(char* dest, const char* src, size_t maxLen)
     // read up to a page at a time
     const size_t readSize =
         std::min<size_t>(destLen, kPageSize - ((uintptr_t)src % kPageSize));
-    const auto bytesRead = readMemory((void*)dest, src, readSize);
+    const auto bytesRead = readMemoryFromPid(pid, (void*)dest, src, readSize);
     if (bytesRead < 0) {
       break;
     }
 
     const size_t cstrLen = strnlen(dest, bytesRead);
     totalCstrLen += cstrLen;
-    if (cstrLen < static_cast<const unsigned int>(bytesRead)) {
+    if (cstrLen < static_cast<size_t>(bytesRead)) {
       break;
     }
 
@@ -849,6 +850,11 @@ size_t ProcPidInfo::readCString(char* dest, const char* src, size_t maxLen)
 
   destBase[totalCstrLen] = '\0';
   return totalCstrLen;
+}
+
+size_t ProcPidInfo::readCString(char* dest, const char* src, size_t maxLen)
+    const {
+  return readCStringFromPid(pid_, dest, src, maxLen);
 }
 
 // Returns vector of pids of all running processes
@@ -1172,6 +1178,22 @@ bool ProcPidInfo::readProcSmapsRollup() {
     }
   }
   return cbs.empty();
+}
+
+bool ProcPidInfo::readEnvironmentForPid(
+    pid_t pid,
+    const fs::path& rootDir,
+    Environment& environment) {
+  // environ can be root read only
+  auto path = getProcfsPathForPid(pid, "environ", rootDir);
+
+  if (readFile(path.c_str(), environment.raw) == 0) {
+    return false;
+  }
+  environment.raw.shrink_to_fit();
+
+  tokenizeKv(environment.raw, null_delim, "=", environment.vars);
+  return true;
 }
 
 static std::string resolveLink(const std::string& link) {

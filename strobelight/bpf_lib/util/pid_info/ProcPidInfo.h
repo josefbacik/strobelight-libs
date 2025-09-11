@@ -194,6 +194,10 @@ class ProcPidInfo {
   // Get all TIDs of active Threads of the Process
   std::vector<pid_t> getRunningThreads() const;
 
+  static std::vector<pid_t> getRunningThreadsForPid(
+      pid_t pid,
+      const std::string& rootDir = "");
+
   // Read and parse the individual line from a memory map
   static bool readMemoryMapLine(const std::string& line, MemoryMapping& module);
 
@@ -228,6 +232,9 @@ class ProcPidInfo {
   // @lint-ignore CLANGTIDY bugprone-easily-swappable-parameters
   ssize_t readMemory(void* dest, const void* src, size_t len) const;
 
+  static ssize_t
+  readMemoryFromPid(pid_t pid, void* dest, const void* src, size_t len);
+
   // Copy a nul-terminated string from the process at the specified `src`
   // address. The `dest` buffer must be at least `maxLen` bytes long.
   // The string written to `dest` is always nul-terminated. Any string
@@ -239,6 +246,9 @@ class ProcPidInfo {
   //
   // Returns the length of the string written to `dest`.
   size_t readCString(char* dest, const char* src, size_t maxLen) const;
+
+  static size_t
+  readCStringFromPid(pid_t pid, char* dest, const char* src, size_t maxLen);
 
   // Returns the given \p path relative to the symlink file that points to the
   // process' root filesystem, without actually resolving symlink, specifically:
