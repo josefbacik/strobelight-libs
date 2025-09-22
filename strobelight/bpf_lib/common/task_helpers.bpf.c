@@ -33,7 +33,7 @@ __hidden void put_task(struct task_struct* task) {
 }
 
 __hidden struct task_struct* get_current_task(struct task_struct* task) {
-  return task ? task : (struct task_struct*)bpf_get_current_task();
+  return task ? task : bpf_get_current_task_btf();
 }
 
 __hidden struct pid* get_task_pid_ptr(

@@ -49,5 +49,5 @@ __hidden bool profile_pid_task(pid_t pid, struct task_struct* task) {
 }
 
 bool profile_pid(pid_t pid) {
-  return profile_pid_task(pid, (struct task_struct*)bpf_get_current_task());
+  return profile_pid_task(pid, bpf_get_current_task_btf());
 };

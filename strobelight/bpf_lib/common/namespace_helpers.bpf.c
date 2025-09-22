@@ -7,7 +7,7 @@ __hidden struct pid_namespace* get_task_pid_ns(const struct task_struct* task) {
   // See kernel function task_active_pid_ns in pid.c which calls into ns_of_pid.
   // Returns the pid namespace of the given task.
   if (!task) {
-    task = (struct task_struct*)bpf_get_current_task();
+    task = bpf_get_current_task_btf();
   }
   if (!task) {
     return NULL;
@@ -45,7 +45,7 @@ __hidden pid_t get_pid_nr_ns(struct pid* pid, struct pid_namespace* ns) {
 static __always_inline pid_t
 get_task_ns_pid_type(const struct task_struct* task, enum pid_type type) {
   if (!task) {
-    task = (struct task_struct*)bpf_get_current_task();
+    task = bpf_get_current_task_btf();
   }
   struct pid_namespace* ns = get_task_pid_ns(task);
   struct pid* p = get_task_pid_ptr(task, type);
