@@ -329,13 +329,6 @@ class ProcPidInfo {
       const std::string& linkname,
       std::string* filename);
 
-  // These three elements are populated once, as a group
-  struct ServiceInfo {
-    std::optional<std::string> serviceID_;
-    std::optional<std::string> serviceTagApp_;
-    std::optional<std::string> serviceTagExe_;
-  };
-
   // Basic Process attributes read on initialization
   const pid_t pid_;
   pid_t nspid_ = 0;
@@ -373,17 +366,12 @@ class ProcPidInfo {
   // Process constant attributes only read when requested
   Lazy<std::chrono::system_clock::time_point> startTime_;
   Lazy<std::optional<std::string>> chrootPath_;
-  Lazy<std::optional<std::string>> chronosJobName_;
-  Lazy<std::optional<std::string>> chronosJobCluster_;
-  Lazy<std::optional<std::string>> chronosJobInstanceID_;
-  Lazy<std::optional<std::string>> chronosJobOwner_;
   Lazy<std::optional<std::string>> relativeExe_;
   Lazy<Environment> environment_;
   Lazy<std::shared_ptr<std::map<std::string, std::string>>> cgroups_;
   Lazy<std::optional<std::vector<std::string>>> cmdLine_;
   Lazy<std::optional<std::string>> pidNamespace_;
   Lazy<std::optional<std::string>> mountNamespace_;
-  Lazy<ServiceInfo> serviceInfo_;
 
   // Stats of the Process
   Stats stats_;
