@@ -1,4 +1,4 @@
-// Copyright (c) 2015- Facebook.  All rights reserved.
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 
 #include "strobelight/bpf_lib/util/pid_info/MemoryMappingIterator.h"
 
