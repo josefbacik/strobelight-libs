@@ -896,6 +896,32 @@ void ProcPidInfo::readProcExe() {
   }
 }
 
+std::string ProcPidInfo::getScriptName() const {
+  std::string scriptName;
+  auto maybeArgs = getCmdLine();
+  if (!maybeArgs.has_value()) {
+    return scriptName;
+  }
+  const auto& args = maybeArgs.value();
+
+  if (name_.starts_with("python")) {
+    // find script name or stop if python is running custom command or stdin
+    for (size_t i = 1; i < args.size(); i++) {
+      if (args[i] == "-" || args[i] == "-c") {
+        // python runs stdin or custom command, no script is specified
+        break;
+      }
+      if (args[i].starts_with("-")) {
+        continue;
+      }
+      std::filesystem::path path(args[i]);
+      scriptName = path.filename();
+      break;
+    }
+  }
+  return scriptName;
+}
+
 bool ProcPidInfo::readProcStat() {
   auto path = getProcfsPath("stat");
   std::string raw;

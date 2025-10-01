@@ -284,6 +284,8 @@ class ProcPidInfo {
   // method run under a temporary directory and create mock procfs files.
   static bool pidExists(pid_t pid, const std::string& rootDir = "");
 
+  virtual std::string getScriptName() const;
+
  protected:
   /**
    * Process constant attributes only read when requested
