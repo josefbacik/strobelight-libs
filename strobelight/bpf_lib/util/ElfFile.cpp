@@ -53,7 +53,7 @@ bool ElfFile::open(const std::string& path) {
     return false;
   }
 
-  struct stat sb {};
+  struct stat sb{};
   if (fstat(fd_, &sb) < 0) {
     return false;
   }

@@ -140,10 +140,11 @@ int PyLineTable::getLineForInstIndexDefault(int addrq) const {
   return ret;
 }
 
-void PyLineTable::parseLocationTable(const std::function<IterControl(
-                                         uintptr_t /* start */,
-                                         uintptr_t /* end */,
-                                         int /* line */)>& fn) const {
+void PyLineTable::parseLocationTable(
+    const std::function<IterControl(
+        uintptr_t /* start */,
+        uintptr_t /* end */,
+        int /* line */)>& fn) const {
   // https://github.com/python/cpython/blob/main/InternalDocs/locations.md
   // https://github.com/benfred/py-spy/blob/master/src/python_interpreters.rs#L304-L346
 
