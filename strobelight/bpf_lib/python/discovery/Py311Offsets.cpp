@@ -72,12 +72,10 @@ extern const OffsetConfig kPy311OffsetConfig = [] {
   config.PyVarObject_size = 16; // offsetof(PyVarObject, ob_size)
   config.String_data = 48; // sizeof(PyASCIIObject)
 
-  // Runtime offsets for accessing global thread state
-  // NOTE: These offsets are for standard CPython 3.11, not Cinder/Meta builds
-  config.TLSKey_offset = 592; // offsetof(_PyRuntimeState, gilstate.autoTSSkey._key)
-  config.TCurrentState_offset = 576; // offsetof(_PyRuntimeState, gilstate.tstate_current)
-  config.PyGIL_offset = 376; // offsetof(_PyRuntimeState, ceval.gil.locked)
-  config.PyGIL_last_holder = 368; // offsetof(_PyRuntimeState, ceval.gil.last_holder)
+  // NOTE: Python 3.11+ doesn't use TLS (autoTSSkey._key = 0), so TLSKey_offset is not set
+  config.TCurrentState_offset = 568;
+  config.PyGIL_offset = 376;
+  config.PyGIL_last_holder = 368;
 
   // Version
   config.PyVersion_major = 3;
