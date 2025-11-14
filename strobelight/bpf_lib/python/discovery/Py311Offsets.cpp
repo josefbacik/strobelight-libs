@@ -72,8 +72,11 @@ extern const OffsetConfig kPy311OffsetConfig = [] {
   config.PyVarObject_size = 16; // offsetof(PyVarObject, ob_size)
   config.String_data = 48; // sizeof(PyASCIIObject)
 
-  // NOTE: Python 3.11+ doesn't use TLS (autoTSSkey._key = 0), so TLSKey_offset is not set
-  config.TCurrentState_offset = 568;
+  // TLS offset for getting per-thread state
+  // TLSKey_offset = offsetof(_PyRuntimeState, gilstate) + offsetof(_gilstate_runtime_state, autoTSSkey) + offsetof(Py_tss_t, _key)
+  config.TLSKey_offset = 596;
+  // TCurrentState_offset = offsetof(_PyRuntimeState, gilstate) + offsetof(_gilstate_runtime_state, tstate_current)
+  config.TCurrentState_offset = 576;
   config.PyGIL_offset = 376;
   config.PyGIL_last_holder = 368;
 
