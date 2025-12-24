@@ -79,6 +79,9 @@ OffsetResolver::OffsetResolver()
       BPF_LIB_REQUIRED_SYMBOL(TCurrentState_offset),
       BPF_LIB_OPTIONAL_SYMBOL(PyGIL_offset),
       BPF_LIB_OPTIONAL_SYMBOL(PyGIL_last_holder),
+      BPF_LIB_OPTIONAL_SYMBOL(PyRuntimeState_interpreters_head),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterState_gil_locked),
+      BPF_LIB_OPTIONAL_SYMBOL(PyInterpreterState_gil_last_holder),
       BPF_LIB_OPTIONAL_SYMBOL(PyBytesObject_data),
       BPF_LIB_OPTIONAL_SYMBOL(PyVarObject_size),
       BPF_LIB_OPTIONAL_SYMBOL(PyFrameObject_owner),
@@ -177,7 +180,8 @@ const OffsetConfig& OffsetResolver::getHeaderOffsetsForVersion(
           {std::string_view("cpython-310"), kPy310OffsetConfig},
           {std::string_view("cpython-311"), kPy311OffsetConfig},
           {std::string_view("cpython-312"), kPy312OffsetConfig},
-          {kPyOffsetDefaultKey, kPy312OffsetConfig}};
+          {std::string_view("cpython-313"), kPy313OffsetConfig},
+          {kPyOffsetDefaultKey, kPy313OffsetConfig}};
 
   auto oc = pythonOffsets.find(versionString);
   if (oc == pythonOffsets.end()) {

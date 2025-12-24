@@ -55,6 +55,9 @@ struct OffsetConfig {
         TCurrentState_offset(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyGIL_offset(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyGIL_last_holder(BPF_LIB_DEFAULT_FIELD_OFFSET),
+        PyRuntimeState_interpreters_head(BPF_LIB_DEFAULT_FIELD_OFFSET),
+        PyInterpreterState_gil_locked(BPF_LIB_DEFAULT_FIELD_OFFSET),
+        PyInterpreterState_gil_last_holder(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyBytesObject_data(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyVarObject_size(BPF_LIB_DEFAULT_FIELD_OFFSET),
         PyFrameObject_owner(BPF_LIB_DEFAULT_FIELD_OFFSET),
@@ -113,6 +116,10 @@ typedef struct {
   uintptr_t TCurrentState_offset;
   uintptr_t PyGIL_offset;
   uintptr_t PyGIL_last_holder;
+  // Python 3.13+ GIL offsets (GIL moved from _PyRuntimeState to PyInterpreterState)
+  uintptr_t PyRuntimeState_interpreters_head;
+  uintptr_t PyInterpreterState_gil_locked;
+  uintptr_t PyInterpreterState_gil_last_holder;
   uintptr_t PyBytesObject_data;
   uintptr_t PyVarObject_size;
   uintptr_t PyFrameObject_owner;

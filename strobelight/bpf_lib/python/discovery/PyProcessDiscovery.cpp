@@ -341,6 +341,48 @@ bool PyProcessDiscovery::checkPyProcessImpl(
 
         pidData =
             computePyPidData(*pyBinaryInfo, *baseLoadAddr, exePyRuntimeAddr);
+
+        // Python 3.13+: GIL moved from _PyRuntimeState to PyInterpreterState
+        // We need to read the interpreter address and compute GIL addresses
+        if (pidData.offsets.PyVersion_major == 3 &&
+            pidData.offsets.PyVersion_minor >= 13 &&
+            pidData.offsets.PyRuntimeState_interpreters_head !=
+                BPF_LIB_DEFAULT_FIELD_OFFSET &&
+            pidData.offsets.PyInterpreterState_gil_locked !=
+                BPF_LIB_DEFAULT_FIELD_OFFSET) {
+          uintptr_t pyRuntimeAddrFinal =
+              exePyRuntimeAddr != 0 ? exePyRuntimeAddr
+                                    : pidData.py_runtime_addr + *baseLoadAddr;
+          uintptr_t interpHeadAddr =
+              pyRuntimeAddrFinal + pidData.offsets.PyRuntimeState_interpreters_head;
+          uintptr_t interpAddr = 0;
+          ssize_t bytesRead = pidInfo.readMemory(
+              &interpAddr, reinterpret_cast<void*>(interpHeadAddr), sizeof(interpAddr));
+          if (bytesRead == sizeof(interpAddr) && interpAddr != 0) {
+            pidData.gil_locked_addr =
+                interpAddr + pidData.offsets.PyInterpreterState_gil_locked;
+            pidData.gil_last_holder_addr =
+                interpAddr + pidData.offsets.PyInterpreterState_gil_last_holder;
+            strobelight_lib_print(
+                STROBELIGHT_LIB_INFO,
+                fmt::format(
+                    "Python 3.13+ GIL tracking: interpAddr={:#x} "
+                    "gil_locked_addr={:#x} gil_last_holder_addr={:#x}",
+                    interpAddr,
+                    pidData.gil_locked_addr,
+                    pidData.gil_last_holder_addr)
+                    .c_str());
+          } else {
+            strobelight_lib_print(
+                STROBELIGHT_LIB_WARN,
+                fmt::format(
+                    "Python 3.13+ GIL tracking: failed to read interpreter "
+                    "address from {:#x}",
+                    interpHeadAddr)
+                    .c_str());
+          }
+        }
+
         strobelight_lib_print(
             STROBELIGHT_LIB_INFO,
             fmt::format(

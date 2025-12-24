@@ -70,6 +70,12 @@ std::ostream& operator<<(std::ostream& os, const OffsetConfig& offsets) {
      << offsets.TCurrentState_offset
      << "\n\t OffsetConfig.PyGIL_offset : " << offsets.PyGIL_offset
      << "\n\t OffsetConfig.PyGIL_last_holder : " << offsets.PyGIL_last_holder
+     << "\n\t OffsetConfig.PyRuntimeState_interpreters_head : "
+     << offsets.PyRuntimeState_interpreters_head
+     << "\n\t OffsetConfig.PyInterpreterState_gil_locked : "
+     << offsets.PyInterpreterState_gil_locked
+     << "\n\t OffsetConfig.PyInterpreterState_gil_last_holder : "
+     << offsets.PyInterpreterState_gil_last_holder
      << "\n\t OffsetConfig.PyBytesObject_data : " << offsets.PyBytesObject_data
      << "\n\t OffsetConfig.PyVarObject_size : " << offsets.PyVarObject_size
      << "\n\t OffsetConfig.PyFrameObject_owner : "

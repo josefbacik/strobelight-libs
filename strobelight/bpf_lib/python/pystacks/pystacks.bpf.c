@@ -814,12 +814,17 @@ static __always_inline void* get_frame_ptr(
             task) < 0) {
       frame_ptr = NULL;
     }
-    if (bpf_probe_read_user_task(
-            &frame_ptr,
-            sizeof(void*),
-            (char*)frame_ptr + (offsets->_PyCFrame_current_frame),
-            task) < 0) {
-      frame_ptr = NULL;
+    // Python 3.13+: current_frame is directly in PyThreadState, no cframe wrapper
+    // In this case, _PyCFrame_current_frame is set to BPF_LIB_DEFAULT_FIELD_OFFSET
+    // to signal that no second dereference is needed
+    if (offsets->_PyCFrame_current_frame != BPF_LIB_DEFAULT_FIELD_OFFSET) {
+      if (bpf_probe_read_user_task(
+              &frame_ptr,
+              sizeof(void*),
+              (char*)frame_ptr + (offsets->_PyCFrame_current_frame),
+              task) < 0) {
+        frame_ptr = NULL;
+      }
     }
   }
   return frame_ptr;
