@@ -25,6 +25,7 @@ extern "C" {
 #include <string>
 #include "strobelight/bpf_lib/include/FunctionSource.h"
 #include "strobelight/bpf_lib/python/discovery/IPyProcessDiscovery.h"
+#include "strobelight/bpf_lib/python/discovery/PyProcessDiscovery.h"
 
 #include "strobelight/bpf_lib/python/include/PySymbolStructs.h"
 #include "strobelight/bpf_lib/python/include/structs.h"
@@ -590,6 +591,47 @@ void pystacks_load_symbols(struct stack_walker_run* run) {
       run,
       bpf_map__fd(run->skel_->maps.pystacks_symbols),
       bpf_map__fd(run->skel_->maps.pystacks_linetables));
+}
+
+void pystacks_add_pid(struct stack_walker_run* run, pid_t pid) {
+  if (nullptr == run || !run->pyProcessDiscovery_ || !run->pidInfoCache_) {
+    return;
+  }
+
+  // checkPyProcess is on the concrete PyProcessDiscovery class
+  auto* discovery =
+      dynamic_cast<facebook::strobelight::bpf_lib::python::PyProcessDiscovery*>(
+          run->pyProcessDiscovery_.get());
+  if (!discovery) {
+    return;
+  }
+
+  auto pidInfo = run->pidInfoCache_->get(pid);
+  if (!pidInfo || !pidInfo->isAlive()) {
+    return;
+  }
+
+  if (!discovery->checkPyProcess(pidInfo)) {
+    return;
+  }
+
+  // Add to targeted_pids BPF map
+  bool targeted = true;
+  bpf_map_update_elem(
+      bpf_map__fd(run->skel_->maps.targeted_pids),
+      &pid,
+      &targeted,
+      BPF_ANY);
+
+  // Update PID config and binary ID config BPF maps
+  discovery->updatePidConfigTableForPid(
+      bpf_map__fd(run->skel_->maps.pystacks_pid_config), pid);
+  discovery->updateBinaryIdConfigTable(
+      bpf_map__fd(run->skel_->maps.pystacks_binaryid_config));
+
+  strobelight_lib_print(
+      STROBELIGHT_LIB_INFO,
+      fmt::format("Dynamically added Python PID {} to pystacks", pid).c_str());
 }
 
 } // extern "C"

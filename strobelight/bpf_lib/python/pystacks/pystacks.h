@@ -54,6 +54,15 @@ void pystacks_free(struct stack_walker_run* run);
 
 void pystacks_load_symbols(struct stack_walker_run* run);
 
+/* Dynamically add a new PID to pystacks after initialization.
+ * Discovers whether the process is Python, and if so updates the BPF maps
+ * so that future stack samples from this PID will include Python frames.
+ * This is useful for tracing child processes spawned after pystacks_init().
+ * run: handle to the pystacks run
+ * pid: the process ID to add
+ */
+void pystacks_add_pid(struct stack_walker_run* run, pid_t pid);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
